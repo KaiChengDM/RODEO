@@ -45,13 +45,22 @@ class KrigingModel : public SurrogateModel{
 
 private:
 
-	vec theta;
-	vec gamma;
+	vec Kriging_weights;
 	vec R_inv_ys_min_beta;
 	vec R_inv_I;
 	vec vectorOfOnes;
 	mat correlationMatrix;
 	mat upperDiagonalMatrix;
+
+	std::vector<vec> Kriging_weights_vec;
+	std::vector<vec> R_inv_ys_min_beta_vec;
+	std::vector<mat> upperDiagonalMatrix_vec;
+	std::vector<mat> correlationMatrix_vec;
+
+	std::vector<double> likelihood_optimal_vec;
+	std::vector<double> beta0_vec;
+	std::vector<double> sigmaSquared_vec;
+
 
 	double beta0 = 0.0;
 	double sigmaSquared = 0.0;
@@ -62,14 +71,41 @@ private:
 	double genErrorKriging;
 
 	LinearModel linearModel;
+
 	Correlationfunction correlationfunction;
 
-	void updateWithNewData(void);
-	void updateModelParams(void);
+	// void updateWithNewData(void);
+	// void updateModelParams(void);
 
 	void computeCorrelationMatrix(void);
-	vec computeCorrelationVector(rowvec x) const;
-	double computeCorrelation(rowvec x_i, rowvec x_j) const;
+	vec computeCorrelationVector(rowvec x, vec theta) const;
+	double computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const;
+	double likelihood_function(vec theta);       // Modified by Kai
+
+	/* Hooke Jeeves algorithm parameter*/
+
+	 double likelihood;
+	 int num;
+     int rank;
+
+     vec hyper_lb;
+     vec hyper_up;
+	 vec hyper_in;
+
+	 mat hyper_cur;
+	 vec hyper_par;
+	 vec hyper_optimal;
+
+	 vec increment;
+	 uvec ind_increment;
+
+	 mat hyperoptimizationHistory;
+
+	 unsigned int numberOfIteration;
+	 int dim;
+
+	 vec likelihood_cur;
+	 double likelihood_optimal;
 
 public:
 
@@ -80,8 +116,6 @@ public:
 	void setNameOfHyperParametersFile(std::string filename);
 	void setNumberOfTrainingIterations(unsigned int);
 
-
-
 	void initializeSurrogateModel(void);
 	void printSurrogateModel(void) const;
 	void printHyperParameters(void) const;
@@ -90,7 +124,10 @@ public:
 	void train(void);
 	double interpolateWithGradients(rowvec x) const ;
 	double interpolate(rowvec x) const ;
+	vec    interpolate_vec(rowvec x) const ;
+
 	void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const;
+	void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const;
 
 
 	void calculateExpectedImprovement(CDesignExpectedImprovement &currentDesign) const;
@@ -104,11 +141,7 @@ public:
 	void setLinearRegressionOn(void);
 	void setLinearRegressionOff(void);
 
-
-	vec getTheta(void) const;
-	vec getGamma(void) const;
 	void setTheta(vec theta);
-	void setGamma(vec gamma);
 
 	void resetDataObjects(void);
 	void resizeDataObjects(void);
@@ -117,14 +150,23 @@ public:
 	void updateModelWithNewData(void);
 	void updateAuxilliaryFields(void);
 
+	/* Hooke Jeeves algorithm*/
+
+	void boxmin(vec hyper_lb, vec hyper_ub, int num);
+	void start(vec int_hyper, vec hyper_lb, vec hyper_ub, int num);
+	void explore(vec int_hyper, double likelihood, int num);
+	void move(vec hyper_1, vec hyper_2, double likelihood, int num);
+
+	mat getTheta(void) const;
+    vec getLikelihood(void) const;
+    vec getOptimalTheta(void) const;
+    double getOptimalLikelihood(void) const;
 
 };
 
 
 
-
-
-class EAdesign {
+/* class EAdesign {
 public:
 	double fitness;             
 	double objective_val;       
@@ -156,7 +198,7 @@ int calculate_fitness(EAdesign &new_born,
 
 void pickup_random_pair(std::vector<EAdesign> population, int &mother,int &father);
 void crossover_kriging(EAdesign &father, EAdesign &mother, EAdesign &child);
-void update_population_properties(std::vector<EAdesign> &population);
+void update_population_properties(std::vector<EAdesign> &population); */
 
 
 //int train_kriging_response_surface(KrigingModel &model);

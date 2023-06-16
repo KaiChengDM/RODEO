@@ -71,12 +71,12 @@ private:
 	double computedR_dxj(rowvec x_i, rowvec x_j,int k) const;
 	double computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const;
 	double computedR_dxi(rowvec x_i, rowvec x_j,int k) const;
-	double likelihood_function(vec theta); // Modified by Kai
+	double likelihood_function(vec theta);       // Modified by Kai
 
 	void computeCorrelationMatrixDot(vec theta);
 	vec computeCorrelationVectorDot(rowvec x) const;
 
-	/* Added by Kai */
+	/* Hooke Jeeves algorithm parameter*/
 
     int num;
 	vec hyper_lb;
@@ -117,15 +117,20 @@ public:
 	void train(void);
 	double interpolateWithGradients(rowvec x) const ;
 	double interpolate(rowvec x) const ;
+	vec interpolate_vec(rowvec x) const ;
 
 	mat interpolate_all(mat x);
 
 	void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const;
+	void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const;
 	void calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const;
+	// void calculateExpectedImprovement_Grad(CDesignExpectedImprovement &designCalculated) const; // Created by Kai
+
 	void addNewSampleToData(rowvec newsample);
 
 
 	double calculateExpectedImprovement(rowvec xp);
+
 	double getyMin(void) const;
 	vec getKrigingWeights(void) const;
 	void setKrigingWeights(vec);
@@ -141,7 +146,7 @@ public:
 	void updateModelWithNewData(void);
 	void updateAuxilliaryFields(void);
 
-	/* Hooke Jeeves algorithm */
+	/* Hooke Jeeves algorithm*/
 
 	void boxmin(vec hyper_lb, vec hyper_ub, int num);
     void start(vec int_hyper, vec hyper_lb, vec hyper_ub, int num);

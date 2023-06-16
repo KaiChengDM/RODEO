@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string>
+#include <vector>
 #include <stdlib.h>
 #include <iostream>
 #include <unistd.h>
@@ -75,7 +76,7 @@ void ObjectiveFunctionDefinition::print(void) const{
 	if(ifMultiLevel == false){
 
 
-		std::cout<< "Output filename = "<<outputFilename<<"\n";
+		std::cout<< "Output filename = "<<outputValueFilename<<"\n";
 		std::cout<< "Executable name = "<<executableName<<"\n";
 
 		if(isNotEmpty(path)){
@@ -191,33 +192,38 @@ ObjectiveFunction::ObjectiveFunction(){
 	assert(ifDefinitionIsSet);
 
 	if(ifMultilevel){
-		cout << "Fitting objective and constraint functions with Multi-Level modeĺ" << endl;
+		cout << "Fitting function with Multi-Level modeĺ" << endl;
 		output.printMessage("Binding the surrogate model with the Multi-Level modeĺ...");
-		surrogateModelML.setinputFileNameHighFidelityData(fileNameInputRead);
+		surrogateModelML.setinputFileNameHighFidelityData(fileNameOutputValueRead);
 		surrogateModelML.setinputFileNameLowFidelityData(fileNameInputReadLowFi);
 		surrogate = &surrogateModelML;
 
 	}
 
 	else if(ifGradientAvailable == false){
-		cout << "Fitting objective and constraint functions with Kriging model" << endl;
+		cout << "Fitting function with Kriging model" << endl;
 		surrogateModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
 		output.printMessage("Binding the surrogate model with the Kriging modeĺ...");
 		surrogate = &surrogateModel;
 
+		if (ifVectorOutput == true){
+			surrogate->setVectorConstraintOn();
+			surrogate->setConstraintLength(constraint_length);
+		}
+
 	}
 
 	else if (surrogatetype == "gradient_enhanced_kriging"){
-		cout << "Fitting objective and constraint functions with gradient enhanced kriging model" << endl;
+		cout << "Fitting function with gradient enhanced kriging model" << endl;
 		gekModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
 		output.printMessage("Binding the surrogate model with the gradient enhanced Kriging modeĺ...");
 	    surrogate = &gekModel;
 		surrogate->setGradientsOn();
 
-	     }
+	    }
 
 	else if (surrogatetype == "sliced_gradient_enhanced_kriging"){
-		cout << "Fitting objective and constraint functions with sliced gradient enhanced kriging model" << endl;
+		cout << "Fitting function with sliced gradient enhanced kriging model" << endl;
 		gekModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
 		output.printMessage("Binding the surrogate model with the sliced gradient enhanced Kriging modeĺ...");
 		surrogate = &sgekModel;
@@ -226,7 +232,7 @@ ObjectiveFunction::ObjectiveFunction(){
 		 }
 
 	else if (surrogatetype == "agrregation_model"){
-		cout << "Fitting objective and constraint functions with Agrregation model" << endl;
+		cout << "Fitting function with Agrregation model" << endl;
 		surrogateModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
 		surrogateModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
 		output.printMessage("Binding the surrogate model with the Agrregation modeĺ...");
@@ -245,8 +251,10 @@ void ObjectiveFunction::setParametersByDefinition(ObjectiveFunctionDefinition de
 
 	executableName = definition.executableName;
 	executablePath = definition.path;
+	jsonFile = definition.jsonFile;
 	fileNameDesignVector = definition.designVectorFilename;
-	fileNameInputRead = definition.outputFilename;
+	fileNameOutputValueRead = definition.outputValueFilename;
+	fileNameOutputGradRead = definition.outputGradFilename;
 	ifGradientAvailable = definition.ifGradient;
 	surrogatetype = definition.surrogatetype;
 
@@ -314,6 +322,25 @@ void ObjectiveFunction::setGradientOff(void){
 
 }
 
+void ObjectiveFunction::setVectorOutputOn(void){   // Kai
+
+	ifVectorOutput = true;
+
+}
+
+void ObjectiveFunction::setVectorOutputOff(void){  // Kai
+
+	ifVectorOutput = false;
+
+}
+
+void ObjectiveFunction::setConstraintLength(int length){
+	constraint_length = length;
+}
+
+mat ObjectiveFunction::getPodBasis(void) const{
+	return pod_basis;
+}
 
 void ObjectiveFunction::setDisplayOn(void){
 
@@ -333,10 +360,17 @@ void ObjectiveFunction::setNumberOfTrainingIterationsForSurrogateModel(unsigned 
 
 }
 
-void ObjectiveFunction::setFileNameReadInput(std::string fileName){
+void ObjectiveFunction::setFileNameReadOutputValue(std::string fileName){
 
 	assert(!fileName.empty());
-	fileNameInputRead = fileName;
+	fileNameOutputValueRead = fileName;
+
+}
+
+void ObjectiveFunction::setFileNameReadOutputGrad(std::string fileName){
+
+	assert(!fileName.empty());
+	fileNameOutputGradRead = fileName;
 
 }
 
@@ -445,9 +479,12 @@ void ObjectiveFunction::initializeSurrogate(void){
 
 	surrogate->normalizeData();
 
-	//cout << "normalization is done" << endl;
+	pod_basis = surrogate->getPodBasis();
+
+	rank = surrogate->readRank();
 
 	surrogate->initializeSurrogateModel();
+
 	surrogate->setNumberOfTrainingIterations(numberOfIterationsForSurrogateTraining);
 
 #if 0
@@ -464,7 +501,6 @@ void ObjectiveFunction::trainSurrogate(void){
 	assert(ifInitialized);
 
 	surrogate->train();
-
 
 }
 
@@ -498,8 +534,6 @@ void ObjectiveFunction::saveDoEData(std::vector<rowvec> data) const{
 }
 
 
-
-
 void ObjectiveFunction::calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const{
 
 
@@ -508,11 +542,15 @@ void ObjectiveFunction::calculateExpectedImprovement(CDesignExpectedImprovement 
 }
 
 
-
-
 bool ObjectiveFunction::checkIfGradientAvailable(void) const{
 
 	return ifGradientAvailable;
+
+}
+
+bool ObjectiveFunction::checkIfVectorConstraint(void) const{
+
+	return ifVectorOutput;
 
 }
 
@@ -523,7 +561,13 @@ std::string ObjectiveFunction::getExecutionCommand(void) const{
 
 	std::string runCommand;
 
-	if(isNotEmpty(executablePath)) {
+    if (executableName == "FdmSolver"){
+
+    	runCommand = executablePath +"/" + executableName + " -f " + jsonFile;   // For induheat
+
+    }
+
+	else if(isNotEmpty(executablePath)) {
 
 		runCommand = executablePath +"/" + executableName;
 	}
@@ -577,7 +621,7 @@ void ObjectiveFunction::addDesignToData(Design &d){
 
 	}
 
-   cout <<  newsample <<  endl;
+   cout << "The optimal design point found is " << newsample <<  endl;
 
 	surrogate->addNewSampleToData(newsample);
 
@@ -586,7 +630,7 @@ void ObjectiveFunction::addDesignToData(Design &d){
 
 void ObjectiveFunction::readOutputWithoutMarkers(Design &outputDesignBuffer) const{
 
-	std::ifstream inputFileStream(fileNameInputRead, ios::in);
+	std::ifstream inputFileStream(fileNameOutputValueRead, ios::in);
 
 	if (!inputFileStream.is_open()) {
 
@@ -596,31 +640,44 @@ void ObjectiveFunction::readOutputWithoutMarkers(Design &outputDesignBuffer) con
 
 	double functionValue;
 	inputFileStream >> functionValue;
-
-
 	outputDesignBuffer.trueValue = functionValue;
 	outputDesignBuffer.objectiveFunctionValue = functionValue;
+	inputFileStream.close();
+
+	std::string line;
+	std::vector<double> obj_grad;
 
 	if(ifGradientAvailable){
 
-		for(unsigned int i=0; i<dim;i++){
+		assert(!this->fileNameOutputGradRead.empty());
 
-			inputFileStream >> outputDesignBuffer.gradient(i);
+	    std::ifstream inputFileStream1(fileNameOutputGradRead, ios::in);
 
-		}
+	    if (!inputFileStream1.is_open()) {
+				cout << "ERROR: There was a problem opening the input file!\n";
+			    abort();
+		 }
 
+	       while(std::getline(inputFileStream1, line)){
+	              double id = static_cast<double>(std::stod(line) );  // line by line
+	              obj_grad.push_back(id);
+	        }
+		   inputFileStream1.close();
+
+		   for (unsigned int i=0; i< dim; i++){
+		       outputDesignBuffer.gradient(i) =obj_grad[i];
+		   }
 	}
 
-	inputFileStream.close();
 
 }
 
 void ObjectiveFunction::readEvaluateOutput(Design &d){
 
+	assert(!this->fileNameOutputValueRead.empty());
 
-
-	assert(!this->fileNameInputRead.empty());
 	assert(d.dimension == dim);
+
 
 	if(ifMarkerIsSet && ifGradientAvailable){
 
@@ -642,38 +699,27 @@ void ObjectiveFunction::readEvaluateOutput(Design &d){
 	}
 
 
-	std::ifstream ifile(fileNameInputRead, ios::in);
+	readOutputWithoutMarkers(d);
 
-	if (!ifile.is_open()) {
+	/* if(ifMarkerIsSet == false){
 
-		cout << "ERROR: There was a problem opening the input file!\n";
-		abort();
-	}
-
-	if(ifMarkerIsSet == false){
-
-		/* If there is not any marker, just reads the functional value (and gradient) from the input file */
+		// If there is not any marker, just reads the functional value (and gradient) from the input file
 
 		readOutputWithoutMarkers(d);
-
-
 	}
-
 
 	else{
 
-		for( std::string line; getline( ifile, line ); ){
+		for( std::string line; getline( ifile, line ); ){  //
 
 			size_t found = line.find(readMarker+" ");
-
-
 
 			if (found != std::string::npos){
 
 				line = removeSpacesFromString(line);
-				line.erase(0,found+1+this->readMarker.size());
+				line.erase(0,found+1+this->readMarker.size());  // erase from 0 to data location
 
-				d.trueValue = stod(line);
+				d.trueValue = stod(line);                       //  stod : transform string to double
 				d.objectiveFunctionValue = stod(line);
 
 			}
@@ -706,7 +752,7 @@ void ObjectiveFunction::readEvaluateOutput(Design &d){
 
 	}
 
-	ifile.close();
+	ifile.close(); */
 
 
 
@@ -774,16 +820,112 @@ void ObjectiveFunction::evaluateAdjoint(Design &d){
 		cout<<"ERROR: Cannot evaluate the objective function. Check settings!\n";
 		abort();
 	}
-
-
 }
 
+
+void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *variance) const{
+
+
+	  if (ifVectorOutput){
+
+		  vec mean_vec;
+		  vec variance_vec;
+
+		  vec mean_vec1(constraint_length);
+		  vec variance_vec1(constraint_length);
+
+		  mean_vec1.zeros();
+		  variance_vec1.zeros();
+
+		  surrogate->interpolateWithVariance_vec(x, mean_vec, variance_vec);
+
+		  mat basis = getPodBasis();
+
+		  rowvec meanvector = surrogate->readOutputMeanVector();
+		  rowvec stdvector  = surrogate->readOutputStdVector();
+
+		  for (unsigned int i = 0; i< rank; i++ ){       // recover the full state solution
+
+			  if (stdvector(i) != 0){
+
+			    mean_vec(i) = mean_vec(i)*stdvector(i) + meanvector(i);
+
+			    variance_vec(i) = variance_vec(i)*stdvector(i)*stdvector(i);
+
+			  }
+			  else {
+
+				  mean_vec(i) = mean_vec(i) + meanvector(i);
+
+				  variance_vec(i) = variance_vec(i)*stdvector(i)*stdvector(i);
+
+			  }
+
+			  mean_vec1 = mean_vec1 + basis.col(i)*(mean_vec(i));
+
+			  variance_vec1 = variance_vec1 + (basis.col(i) % basis.col(i))*(variance_vec(i));
+
+		  }
+
+
+		    double constraint_value = value;
+
+			if (inequalityType == "<") {
+
+				mean_vec1 =  - mean_vec1 + constraint_value;
+
+			}
+
+			if (inequalityType == ">"){
+
+				mean_vec1 =   mean_vec1 - constraint_value;
+			}
+
+		    vec probability(constraint_length);   probability.zeros();
+
+		    for (long i = 0; i< constraint_length; i++){
+
+		    	if (variance_vec1(i)!= 0) {
+
+		    		  probability(i) = 1 -cdf(- mean_vec1(i)/sqrt(variance_vec1(i)),0.0,1.0);        // Compute the probability that the constraint function is satisfied.
+
+		    	} else if(mean_vec1(i)> 0)  {
+
+		    		  probability(i) = 1;
+
+		    	}else{
+		    		  probability(i) = 0;
+		    	}
+
+		     }
+
+		    uword ind = index_min(probability);
+
+		    *mean = mean_vec1(ind);  *variance = variance_vec1(ind);
+
+		    // cout << " predict value is " <<  *mean << endl;
+		    // cout << " predict variance is " <<  *variance << endl;
+
+
+	  }else {
+
+		  surrogate->interpolateWithVariance(x, mean, variance);
+
+		  double meanvalue = surrogate->readOutputMean();
+		  double stdvalue  = surrogate->readOutputStd();
+
+		  *mean = (*mean)*stdvalue+meanvalue;  *variance = (*variance)*stdvalue*stdvalue;
+
+	  }
+
+}
 
 double ObjectiveFunction::interpolate(rowvec x) const{
 
 	return surrogate->interpolate(x);
 
 }
+
 
 void ObjectiveFunction::print(void) const{
 
@@ -793,7 +935,8 @@ void ObjectiveFunction::print(void) const{
 	std::cout<<"Dimension: "<<dim<<endl;
 	std::cout<<"ExecutableName: "<<executableName<<"\n";
 	std::cout<<"ExecutablePath: "<<executablePath<<"\n";
-	std::cout<<"Output filename: "<<fileNameInputRead<<"\n";
+	std::cout<<"Output value filename: "<<fileNameOutputValueRead<<"\n";
+	std::cout<<"Output gradient filename: "<<fileNameOutputGradRead<<"\n";
 	std::cout<<"Design vector filename: "<<fileNameDesignVector<<"\n";
 
 	if(this->ifMarkerIsSet){

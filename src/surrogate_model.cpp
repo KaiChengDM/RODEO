@@ -70,27 +70,37 @@ void SurrogateModel::setName(std::string nameInput){
 
 }
 
-
-
 void SurrogateModel::setGradientsOn(void){
-
 	data.setGradientsOn();
 	ifHasGradientData = true;
-
-
 }
 
 void SurrogateModel::setGradientsOff(void){
-
 	data.setGradientsOff();
 	ifHasGradientData = false;
-
 }
 
 bool SurrogateModel::areGradientsOn(void) const{
-
 	return ifHasGradientData;
+}
 
+
+void SurrogateModel::setVectorConstraintOn(void){
+	data.setVectorOutputOn();
+	ifVectorOutput = true;
+}
+
+void SurrogateModel::setConstraintLength(int length){
+	data.setConstraintLength(length);
+}
+
+void SurrogateModel::setVectorConstraintOff(void){
+	data.setVectorOutputOff();
+	ifVectorOutput = false;
+}
+
+bool SurrogateModel::areVectorConstraint(void) const{
+	return ifVectorOutput;
 }
 
 
@@ -184,11 +194,54 @@ mat SurrogateModel::getRawData(void) const{
 
 void SurrogateModel::readData(void){
 
-   //cout << filenameDataInput << endl;
-
 	data.readData(filenameDataInput);
 
 	ifDataIsRead = true;
+
+}
+
+void SurrogateModel::assignOutput(int ID){
+
+	data.assignOutput(ID);
+
+	ifDataIsAssigned = true;
+
+}
+
+int SurrogateModel::readRank(void) const{
+
+	return data.getRank();
+
+}
+
+double SurrogateModel::readOutputMean(void) const{
+
+	return data.getOutputMean();
+
+}
+
+double SurrogateModel::readOutputStd(void) const{
+
+	return data.getOutputStd();
+
+}
+
+rowvec SurrogateModel::readOutputMeanVector(void) const{
+
+	return data.getOutputMeanVector();
+
+}
+
+rowvec SurrogateModel::readOutputStdVector(void) const{
+
+	return data.getOutputStdVector();
+
+}
+
+
+mat SurrogateModel::getPodBasis(void) const{
+
+	return data.getPodBasis();
 
 }
 
@@ -199,12 +252,12 @@ void SurrogateModel::readDataTest(void){
 }
 
 
-
 void SurrogateModel::normalizeData(void){
 
 	assert(ifDataIsRead);
 
 	data.normalizeSampleInputMatrix();
+	data.normalizeSampleOutput();
 
 	ifNormalized = true;
 
@@ -214,14 +267,12 @@ void SurrogateModel::normalizeDataTest(void){
 
 
 	data.normalizeSampleInputMatrixTest();
-
+	//data.normalizeSampleOutputMatrixTest();
 
 }
 
 
 void SurrogateModel::updateAuxilliaryFields(void){
-
-
 
 
 }
@@ -278,22 +329,17 @@ void SurrogateModel::calculateOutSampleError(void){
 
 	testResults = zeros<mat>(NTest, numberOfEntries);
 
-
-
-
 	for(unsigned int i=0;i<NTest;i++){
 
 		rowvec xp = XTest.row(i);
 
 		rowvec x  = XTestraw.row(i);
 
-
 		double functionValueSurrogate = interpolate(xp);
 
 		double functionValueExact = yTest(i);
 
 		double squaredError = (functionValueExact-functionValueSurrogate)*(functionValueExact-functionValueSurrogate);
-
 
 		rowvec sample(numberOfEntries);
 		copyRowVector(sample,x);
@@ -303,8 +349,6 @@ void SurrogateModel::calculateOutSampleError(void){
 
 		testResults.row(i) = sample;
 	}
-
-
 
 }
 
@@ -383,47 +427,136 @@ void SurrogateModel::setNameOfInputFileTest(string filename){
 
 	assert(isNotEmpty(filename));
 	filenameDataInputTest = filename;
-
-
 }
+
 
 void SurrogateModel::tryOnTestData(void) const{
 
 	output.printMessage("Trying surrogate model on test data...");
 
 	unsigned int dim = data.getDimension();
-	unsigned int numberOfEntries = dim + 1;
 	unsigned int numberOfTestSamples = data.getNumberOfSamplesTest();
 
-	mat results(numberOfTestSamples,numberOfEntries);
-	mat results1(numberOfTestSamples,numberOfEntries);
 
-	for(unsigned int i=0; i<numberOfTestSamples; i++){
+	if (!ifVectorOutput){
 
-		rowvec xp = data.getRowXTest(i);
-		rowvec x  = data.getRowXRawTest(i);
+	   unsigned int numberOfEntries = dim + 1;
 
-		double fTilde = interpolate(xp);
+	   mat results(numberOfTestSamples,numberOfEntries);
 
-		rowvec sample(numberOfEntries);
-		copyRowVector(sample,x);
-		sample(dim) =  fTilde;
+	   double std_y =  data.getOutputStd(); double mean_y =  data.getOutputMean();
 
-		results.row(i) = sample;
+       cout << "The output std " << std_y  <<  endl;
+       cout << "The output mean " << mean_y <<  endl;
 
+	   for(unsigned int i=0; i<numberOfTestSamples; i++){
+
+		  rowvec xp = data.getRowXTest(i);
+		  rowvec x  = data.getRowXRawTest(i);
+
+		  double fTilde = interpolate(xp);
+
+		  rowvec sample(numberOfEntries);
+		  copyRowVector(sample,x);
+		  sample(dim)    =  fTilde*std_y + mean_y ;
+		  results.row(i) = sample;
+
+	    }
+
+	     output.printMessage("Saving surrogate test results in the file: surrogateTest.csv");
+
+	     saveMatToCVSFile(results,"surrogateTest.csv");
+
+	     output.printMessage("Surrogate test results", results);
+
+	     vec testData = data.getYTest();
+
+	     double mse = mean((testData-results.col(dim))%(testData-results.col(dim)))/var(testData);
+
+         cout << "The relative mean squared error is " << mse <<  endl;
+
+	} else {
+
+		  int rank = readRank();
+
+		  int length = data.getConstraintLength();
+
+		  unsigned int numberOfEntries = dim + length;
+
+		  mat results(numberOfTestSamples,numberOfEntries);
+
+		  mat basis = getPodBasis();
+		  vec mean_vec1(length);
+		  vec variance_vec1(length);
+
+	 	  rowvec meanvector = readOutputMeanVector();
+	 	  rowvec stdvector  = readOutputStdVector();
+
+		  for(unsigned int i=0; i<numberOfTestSamples; i++){
+
+		  	  rowvec xp = data.getRowXTest(i);
+		  	  rowvec x  = data.getRowXRawTest(i);
+
+		  	  vec fTilde = interpolate_vec(xp);
+
+			  mean_vec1.zeros();   variance_vec1.zeros();
+
+			  // cout << " mean vector " << meanvector <<  endl;
+			  // cout << " std vector "  << stdvector <<  endl;
+			  //cout << " rank "  << rank <<  endl;
+
+		  	  for (unsigned int j = 0; j< rank; j++ ){                     // recover the full state solution
+
+		  		 if (stdvector(j) != 0){
+
+		  			 fTilde(j) = fTilde(j)*stdvector(j) + meanvector(j);   // map back to original space
+
+		  		 }else {
+
+		  			 fTilde(j) = fTilde(j) + meanvector(j);                // map back to original space
+
+		  		 }
+
+		  		 mean_vec1 = mean_vec1 + basis.col(j)*(fTilde(j));
+
+		  	  }
+
+		  	 // mean_vec1 = mean_vec1 % stdvector + meanvector;          // original prediction mean
+
+		  	  rowvec sample(numberOfEntries);
+		  	  copyRowVector(sample,x);
+		  	  sample.subvec(dim,numberOfEntries-1) = mean_vec1.t() ;
+		  	  results.row(i) = sample;
+
+		   }
+
+		         output.printMessage("Saving surrogate test results in the file: surrogateTest.csv");
+
+		 	     saveMatToCVSFile(results,"surrogateTest.csv");
+
+		 	   // output.printMessage("Surrogate test results", results);
+
+		 	     mat testData = data.getY_VectorTest();
+
+		 	     vec mse; mse.zeros(length);
+
+		 	     for (unsigned int i=0; i< length;i++) {
+
+                      if (var(testData.col(i))!= 0){
+
+                    	  mse(i) = mean((testData.col(i)-results.col(dim+i))%((testData.col(i)-results.col(dim+i))))/var(testData.col(i));
+
+                      }
+                      else{
+
+                    	  mse(i) = mean((testData.col(i)-results.col(dim+i))%((testData.col(i)-results.col(dim+i))));
+
+                      }
+
+		  }
+
+		         cout << "The total relative mean squared error is " << mean(mse) <<  endl;
 	}
-
-	output.printMessage("Saving surrogate test results in the file: surrogateTest.csv");
-
-	saveMatToCVSFile(results,"surrogateTest.csv");
-
-	output.printMessage("Surrogate test results", results);
-
-	vec testData = data.getYTest();
-
-	double mse = mean((testData-results.col(dim))%(testData-results.col(dim)))/var(testData);
-
-    cout << "Test relative mean squared error is " << mse <<  endl;
 
 }
 

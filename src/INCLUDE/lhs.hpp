@@ -36,6 +36,7 @@ using namespace arma;
 class LHSSamples{
 
 private:
+
 	unsigned int numberOfDesignVariables;
 	unsigned int numberOfSamples;
 

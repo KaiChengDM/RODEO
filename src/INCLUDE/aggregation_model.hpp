@@ -85,8 +85,10 @@ public:
 	double calculateDualModelWeight(const rowvec &, int) const;
 
 	double interpolate(rowvec) const ;
+	vec interpolate_vec(rowvec x) const ;
 	double interpolateWithGradients(rowvec) const ;
 	void interpolateWithVariance(rowvec,double *,double *) const;
+	void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const;
 
 	void calculateExpectedImprovement(CDesignExpectedImprovement &) const;
 

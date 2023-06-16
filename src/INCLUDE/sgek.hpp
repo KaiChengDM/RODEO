@@ -51,6 +51,7 @@ private:
 	vec vectorOfF;
 	mat correlationMatrixDot;
 	mat upperDiagonalMatrixDot;
+
 	vec sensitivity;    // derivative-based global sensitivity analysis
 	mat gradient;       // gradient matrix
 	vec alpha;          // auxiliary hyper-parameter
@@ -78,52 +79,13 @@ private:
 	double computedR_dxj(rowvec x_i, rowvec x_j,int k) const;
 	double computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const;
 	double computedR_dxi(rowvec x_i, rowvec x_j,int k) const;
-	double sliced_likelihood_function(vec alpha);         // Modified by Kai
-	void original_likelihood_function(vec theta);  // Modified by Kai
+	double likelihood_function(vec alpha);
+	void original_likelihood_function(vec theta);
 	void slicing(unsigned int snum);
 	void computeCorrelationMatrixDot(vec theta);
 	vec computeCorrelationVectorDot(rowvec x) const;
 
-	/* Added by Kai
-
-	field<mat>  X_2;
-	field<mat>  upperDiagonalMatrixDot_2;
-	field<mat>  correlationMatrixDot_2;
-
-	field<vec>  yGEK_2;
-	field<vec>  R_inv_F_2;
-	field<vec>  vectorOfF_2;
-	field<vec>  R_inv_ys_2;
-	field<vec>  R_inv_ys_min_beta_2;
-	field<vec>  ys_min_betaF_2;
-	field<uvec> index_2;
-
-	vec logdetR_2;
-	vec n_2;
-	vec nom_2;
-	vec denom_2;
-	vec sig_2;
-
-
-	field<mat>  X_1;
-	field<mat>  upperDiagonalMatrixDot_1;
-	field<mat>  correlationMatrixDot_1;
-
-	field<vec>  yGEK_1;
-	field<vec>  R_inv_F_1;
-	field<vec>  vectorOfF_1;
-	field<vec>  R_inv_ys_1;
-	field<vec>  R_inv_ys_min_beta_1;
-	field<vec>  ys_min_betaF_1;
-	field<uvec> index_1;
-
-	vec logdetR_1;
-	vec n_1;
-	vec nom_1;
-	vec denom_1;
-	vec sig_1; */
-
-	/* Added by Kai */
+	/* Added by Kai*/
 
     int num;    // number of multiple starts
 	vec hyper_lb;
@@ -164,10 +126,12 @@ public:
 	void train(void);
 	double interpolateWithGradients(rowvec x) const ;
 	double interpolate(rowvec x) const ;
+	vec interpolate_vec(rowvec x) const ;
 
 	mat interpolate_all(mat x);
 
 	void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const;
+	void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const;
 	void calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const;
 	void addNewSampleToData(rowvec newsample);
 
@@ -188,7 +152,7 @@ public:
 	void updateModelWithNewData(void);
 	void updateAuxilliaryFields(void);
 
-	/* Hooke Jeeves algorithm */
+	/* Hooke Jeeves algorithm*/
 
 	void boxmin(vec hyper_lb, vec hyper_ub, int num);
     void start(vec int_hyper, vec hyper_lb, vec hyper_ub);
@@ -197,6 +161,7 @@ public:
     vec getTheta(void) const;
     vec getAlpha(void) const;
     double getLikelihood(void) const;
+
 	/* test functions */
 
 	friend void testGEKcalculateRDot(void);

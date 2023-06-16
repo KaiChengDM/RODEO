@@ -438,9 +438,22 @@ void AggregationModel::interpolateWithVariance(rowvec x, double *estimateAggrega
 
 	*estimateAggregationModel = w1*estimateKrigingModel + w2 * estimateDualModel;
 
+}
 
+void AggregationModel::interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const{
+
+	cout << "ERROR: interpolateWithVariance does not exist for AggregationModel\n";
+	abort();
 
 }
+
+vec AggregationModel::interpolate_vec(rowvec xp) const{
+
+	cout << "ERROR: interpolate of vector output does not exist for AggregationModel\n";
+	abort();
+
+}
+
 
 double AggregationModel::calculateDualModelWeight(const rowvec &x, int index) const{
 

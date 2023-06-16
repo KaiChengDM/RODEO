@@ -52,8 +52,9 @@ private:
 
 	string name;
 
-
+	unsigned int output_dimension=1;
 	unsigned int dimension = 0;
+
 	OutputDevice outputToScreen;
 	Bounds boxConstraints;
 
@@ -71,10 +72,10 @@ private:
 	unsigned int numberOfTrainingIterations = 10000;
 
 	bool ifSurrogateModelSpecified = false;
+	bool ifVectorOutput = false;
 
 	string fileNameTraingData;
 	string fileNameTraingDataLowFidelity;
-
 	string fileNameTestData;
 
 public:
@@ -86,6 +87,7 @@ public:
 	void setName(string);
 
 	void setDimension(unsigned int);
+	void setOutputVectorDimension(unsigned int);
 
 	void setDisplayOn(void);
 	void setDisplayOff(void);

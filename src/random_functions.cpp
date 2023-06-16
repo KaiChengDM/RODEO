@@ -80,12 +80,16 @@ void generateRandomDoubleArray(double *xp,double a, double b, unsigned int dim) 
 
 
 rowvec generateRandomRowVector(vec lb, vec ub){
+
 	unsigned int dim = lb.size();
 	rowvec x(dim);
+
 	for(unsigned int i=0; i<dim; i++) {
+
 		assert(lb(i) <= ub(i));
 		x(i) = generateRandomDouble(lb(i), ub(i));
 	}
+
 	return x;
 
 }

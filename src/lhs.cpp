@@ -57,7 +57,7 @@ LHSSamples::LHSSamples(unsigned int d, double lb, double ub, unsigned int N){
 LHSSamples::LHSSamples(unsigned int d, double *lb, double *ub, unsigned int N){
 
 	assert(d>0);
-	assert(N>d);
+	//assert(N>d);             // Modifidied by Kai
 	numberOfDesignVariables = d;
 	numberOfSamples = N;
 	for(unsigned int i=0; i<d; i++){
@@ -82,7 +82,7 @@ LHSSamples::LHSSamples(unsigned int d, double *lb, double *ub, unsigned int N){
 LHSSamples::LHSSamples(unsigned int d, vec lb, vec ub, unsigned int N){
 
 	assert(d>0);
-	assert(N>d);
+	// assert(N>d);                // Modified by Kai
 	numberOfDesignVariables = d;
 	numberOfSamples = N;
 	for(unsigned int i=0; i<d; i++){
@@ -413,10 +413,7 @@ void LHSSamples::visualize(void){
 
 void LHSSamples::printSamples(void){
 
-
 	printMatrix(this->samples,"LHS Samples");
-
-
 
 }
 

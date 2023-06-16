@@ -82,6 +82,7 @@ void appendRowVectorToCSVData(rowvec v, std::string fileName){
 	outfile.open(fileName, std::ios_base::app); // append instead of overwrite
 
 	outfile.precision(10);
+
 	for(unsigned int i=0; i<v.size()-1; i++){
 
 		outfile << v(i) <<",";

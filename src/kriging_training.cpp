@@ -41,6 +41,7 @@
 #include "random_functions.hpp"
 #include "Rodeo_macros.hpp"
 #include "Rodeo_globals.hpp"
+#include "correlation_functions.hpp"
 
 #define ARMA_DONT_PRINT_ERRORS
 #include <armadillo>
@@ -53,8 +54,6 @@ int total_number_of_function_evals;
 
 double population_overall_max = -10E14;
 int population_overall_max_tread_id = -1;
-
-
 
 
 KrigingModel::KrigingModel():SurrogateModel(){}
@@ -96,44 +95,44 @@ void KrigingModel::setNameOfHyperParametersFile(std::string label){
 }
 
 
-
-
-
 void KrigingModel::initializeSurrogateModel(void){
 
 	assert(ifDataIsRead);
 	assert(ifNormalized);
 
-
 	output.printMessage("Initializing the Kriging model...");
 
+	unsigned int dim             = data.getDimension();
+	unsigned int numberOfSamples = data.getNumberOfSamples() ;
 
-	unsigned int dim = data.getDimension();
-	unsigned int numberOfSamples = data.getNumberOfSamples();
+	numberOfHyperParameters = dim;
+	Kriging_weights         = ones<vec>(dim);
+	correlationMatrix       = zeros<mat>(numberOfSamples,numberOfSamples);
+	upperDiagonalMatrix     = zeros<mat>(numberOfSamples,numberOfSamples);
+	R_inv_ys_min_beta       = zeros<vec>(numberOfSamples);
+	R_inv_I                 = zeros<vec>(numberOfSamples);
+	vectorOfOnes            = ones<vec>(numberOfSamples);
 
-	numberOfHyperParameters = 2*dim;
-	theta = ones<vec>(dim);
+	if (ifVectorOutput){           // Check if the output is a vector
 
-	gamma = zeros<vec>(dim);
-	gamma.fill(2.0);
+		rank = readRank();
 
+	 for (unsigned int i=0; i< rank; i++){
 
-	correlationMatrix = zeros<mat>(numberOfSamples,numberOfSamples);
-	upperDiagonalMatrix= zeros<mat>(numberOfSamples,numberOfSamples);
-	R_inv_ys_min_beta = zeros<vec>(numberOfSamples);
-	R_inv_I= zeros<vec>(numberOfSamples);
-	vectorOfOnes= ones<vec>(numberOfSamples);
+		  Kriging_weights_vec.push_back(Kriging_weights);
+		  R_inv_ys_min_beta_vec.push_back(R_inv_ys_min_beta);
+		  upperDiagonalMatrix_vec.push_back(upperDiagonalMatrix);
+	      correlationMatrix_vec.push_back(correlationMatrix);
+	  }
 
+	 }
 
-	if(ifUsesLinearRegression){
+	if(ifUsesLinearRegression){    // currently, we don't use linear regression
 
 		output.printMessage("Linear model is active for the Kriging model...");
 
 		if(areGradientsOn()) {
-
 			linearModel.setGradientsOn();
-
-
 		}
 
 		linearModel.readData();
@@ -144,13 +143,12 @@ void KrigingModel::initializeSurrogateModel(void){
 		linearModel.initializeSurrogateModel();
 		linearModel.train();
 
-
 	}
-
 
 	updateAuxilliaryFields();
 
 	ifInitialized = true;
+
 #if 0
 	std::cout << "Kriging model initialization is done...\n";
 #endif
@@ -160,8 +158,8 @@ void KrigingModel::initializeSurrogateModel(void){
 void KrigingModel::printHyperParameters(void) const{
 
 	output.printMessage("Hyperparameters of the Kriging model = ");
-	output.printMessage("theta",theta);
-	output.printMessage("gamma",gamma);
+	output.printMessage("theta",Kriging_weights);
+	//output.printMessage("gamma",gamma);
 
 }
 void KrigingModel::saveHyperParameters(void) const{
@@ -174,15 +172,12 @@ void KrigingModel::saveHyperParameters(void) const{
 		unsigned int dim = data.getDimension();
 
 		rowvec saveBuffer(numberOfHyperParameters);
-		for(unsigned int i=0; i<dim; i++) saveBuffer(i) = theta(i);
+		for(unsigned int i=0; i<dim; i++) saveBuffer(i) = Kriging_weights(i);
 		for(unsigned int i=0; i<dim; i++) saveBuffer(i+dim) = gamma(i);
 
 		saveBuffer.save(hyperparameters_filename,csv_ascii);
 
-
 	}
-
-
 
 }
 
@@ -198,8 +193,8 @@ void KrigingModel::loadHyperParameters(void){
 
 		unsigned int dim = data.getDimension();
 
-		for(unsigned int i=0; i<dim; i++) theta(i) = loadBuffer(i);
-		for(unsigned int i=0; i<dim; i++) gamma(i) = loadBuffer(i+dim);
+		for(unsigned int i=0; i<dim; i++) Kriging_weights(i) = loadBuffer(i);
+		//for(unsigned int i=0; i<dim; i++) gamma(i) = loadBuffer(i+dim);
 
 
 	}
@@ -212,32 +207,31 @@ double KrigingModel::getyMin(void) const{
 
 }
 
-
-vec KrigingModel::getTheta(void) const{
+/*vec KrigingModel::getTheta(void) const{
 
 	return theta;
 
 
 }
+
 vec KrigingModel::getGamma(void) const{
 
 	return gamma;
 
 }
 
-void KrigingModel::setTheta(vec theta){
-
-	this->theta = theta;
-
-
-}
 void KrigingModel::setGamma(vec gamma){
 
 	this->gamma = gamma;
-
-
 }
 
+*/
+
+void KrigingModel::setTheta(vec theta){
+
+	this->Kriging_weights = theta;
+
+}
 
 
 vec KrigingModel::getRegressionWeights(void) const{
@@ -251,8 +245,6 @@ void KrigingModel::setRegressionWeights(vec weights){
 	linearModel.setWeights(weights);
 
 }
-
-
 
 
 void KrigingModel::setEpsilon(double value){
@@ -334,11 +326,8 @@ void KrigingModel::printSurrogateModel(void) const{
 #endif
 	printf("\n");
 
-
-
-
-
 }
+
 
 void KrigingModel::resetDataObjects(void){
 
@@ -347,10 +336,25 @@ void KrigingModel::resetDataObjects(void){
 	R_inv_I.reset();
 	R_inv_ys_min_beta.reset();
 	vectorOfOnes.reset();
-
-
 	beta0 = 0.0;
 	sigmaSquared = 0.0;
+
+	std::vector<vec> tmp1;
+	Kriging_weights_vec.swap(tmp1);
+	std::vector<vec> tmp2;
+	R_inv_ys_min_beta_vec.swap(tmp2);
+
+	std::vector<double> tmp3;
+	likelihood_optimal_vec.swap(tmp3);;
+	std::vector<double> tmp4;
+	beta0_vec.swap(tmp4);
+	std::vector<double> tmp5;
+    sigmaSquared_vec.swap(tmp5);
+
+	std::vector<mat> tmp6;
+    upperDiagonalMatrix_vec.swap(tmp6);
+	std::vector<mat> tmp7;
+	correlationMatrix_vec.swap(tmp7);
 
 }
 
@@ -369,7 +373,6 @@ void KrigingModel::resizeDataObjects(void){
 	vectorOfOnes.set_size(numberOfSamples);
 	vectorOfOnes.fill(1.0);
 
-
 }
 
 
@@ -381,68 +384,119 @@ void KrigingModel::updateAuxilliaryFields(void){
 #if 0
 	cout<<"Updating auxiliary variables of the Kriging model\n";
 #endif
-	vec ys = data.getOutputVector();
 
 	mat X = data.getInputMatrix();
 
-	if(ifUsesLinearRegression){
+	if (ifVectorOutput){
 
+		for (unsigned int i = 0; i< rank; i++){
 
-		vec ysLinearRegression = linearModel.interpolateAll(X);
-		ys = ys - ysLinearRegression;
+		   assignOutput(i);               // assign the i-th POD coefficient to the output
 
+		   vec ys = data.getOutputVector();
 
+		   vec theta = Kriging_weights_vec[i];
+
+		   //  	correlationMatrix_vec[i] = correlationfunction.corrbiquadspline_kriging(X,theta);
+
+		     correlationMatrix_vec[i] = correlationfunction.corrgaussian_kriging(X,theta);
+
+		   	/* Cholesky decomposition R = LDL^T */
+
+		   	int cholesky_return = chol(upperDiagonalMatrix_vec[i], correlationMatrix_vec[i]);
+
+		   	if (cholesky_return == 0) {
+
+		   		printf("ERROR: Ill conditioned correlation matrix, Cholesky decomposition failed!\n");
+		   		abort();
+		   	}
+
+		   	vec R_inv_ys(numberOfSamples);
+
+		   	R_inv_ys.fill(0.0);
+
+		   	solveLinearSystemCholesky(upperDiagonalMatrix_vec[i], R_inv_ys, ys);    /* solve R x = ys */
+
+			R_inv_I = zeros(numberOfSamples);
+
+		   	solveLinearSystemCholesky(upperDiagonalMatrix_vec[i], R_inv_I, vectorOfOnes);      /* solve R x = I */
+
+		   	beta0 = (1.0/dot(vectorOfOnes,R_inv_I)) * (dot(vectorOfOnes,R_inv_ys));
+
+		   	beta0_vec.push_back(beta0);
+
+		   	vec ys_min_betaI = ys - beta0*vectorOfOnes;
+
+		   	/* solve R x = ys-beta0*I */
+
+		   	solveLinearSystemCholesky(upperDiagonalMatrix_vec[i], R_inv_ys_min_beta_vec[i] , ys_min_betaI);
+
+		   	sigmaSquared = (1.0 / numberOfSamples) * dot(ys_min_betaI, R_inv_ys_min_beta_vec[i]);
+
+		   	sigmaSquared_vec.push_back(sigmaSquared);
+
+		}
+
+	}else{
+
+		vec ys = data.getOutputVector();
+
+		if(ifUsesLinearRegression){
+
+				vec ysLinearRegression = linearModel.interpolateAll(X);
+				ys = ys - ysLinearRegression;
+
+		}
+
+			vec theta = Kriging_weights;
+
+			// correlationMatrix = correlationfunction.corrbiquadspline_kriging(X,theta);
+
+			correlationMatrix = correlationfunction.corrgaussian_kriging(X,theta);
+
+			/* Cholesky decomposition R = LDL^T */
+
+			int cholesky_return = chol(upperDiagonalMatrix, correlationMatrix);
+
+			if (cholesky_return == 0) {
+				printf("ERROR: Ill conditioned correlation matrix, Cholesky decomposition failed!\n");
+				abort();
+			}
+
+			vec R_inv_ys(numberOfSamples);
+
+			R_inv_ys.fill(0.0);
+
+			solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_ys, ys);    /* solve R x = ys */
+
+			R_inv_I = zeros(numberOfSamples);
+
+			solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_I, vectorOfOnes);      /* solve R x = I */
+
+			beta0 = (1.0/dot(vectorOfOnes,R_inv_I)) * (dot(vectorOfOnes,R_inv_ys));
+
+			vec ys_min_betaI = ys - beta0*vectorOfOnes;
+
+			/* solve R x = ys-beta0*I */
+
+			solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_ys_min_beta , ys_min_betaI);
+
+			sigmaSquared = (1.0 / numberOfSamples) * dot(ys_min_betaI, R_inv_ys_min_beta);
 	}
-
-	computeCorrelationMatrix();
-
-	/* Cholesky decomposition R = LDL^T */
-
-
-	int cholesky_return = chol(upperDiagonalMatrix, correlationMatrix);
-
-	if (cholesky_return == 0) {
-		printf("ERROR: Ill conditioned correlation matrix, Cholesky decomposition failed!\n");
-		abort();
-	}
-
-
-	vec R_inv_ys(numberOfSamples);
-	R_inv_ys.fill(0.0);
-
-
-	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_ys, ys);    /* solve R x = ys */
-
-	R_inv_I = zeros(numberOfSamples);
-
-	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_I, vectorOfOnes);      /* solve R x = I */
-
-
-	beta0 = (1.0/dot(vectorOfOnes,R_inv_I)) * (dot(vectorOfOnes,R_inv_ys));
-
-	vec ys_min_betaI = ys - beta0*vectorOfOnes;
-
-
-
-	/* solve R x = ys-beta0*I */
-	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_ys_min_beta , ys_min_betaI);
-
-
-	sigmaSquared = (1.0 / numberOfSamples) * dot(ys_min_betaI, R_inv_ys_min_beta);
-
 
 }
 
 void KrigingModel::updateModelWithNewData(void){
 
 	resetDataObjects();
+
 	readData();
 
 	unsigned int numberOfSamples = data.getNumberOfSamples();
 
 	normalizeData();
 
-	correlationMatrix.set_size(numberOfSamples,numberOfSamples);
+	/*correlationMatrix.set_size(numberOfSamples,numberOfSamples);
 	correlationMatrix.fill(0.0);
 	upperDiagonalMatrix.set_size(numberOfSamples,numberOfSamples);
 	upperDiagonalMatrix.fill(0.0);
@@ -451,14 +505,15 @@ void KrigingModel::updateModelWithNewData(void){
 	R_inv_I.set_size(numberOfSamples);
 	R_inv_I.fill(0.0);
 	vectorOfOnes.set_size(numberOfSamples);
-	vectorOfOnes.fill(1.0);
+	vectorOfOnes.fill(1.0);*/
 
+	initializeSurrogateModel();  // reset everything when a new data is added to model
 
-	updateAuxilliaryFields();
+	// updateAuxilliaryFields();
 
 }
 
-vec KrigingModel::computeCorrelationVector(rowvec x) const{
+vec KrigingModel::computeCorrelationVector(rowvec x, vec theta) const{
 
 	unsigned int numberOfSamples = data.getNumberOfSamples();
 
@@ -467,7 +522,7 @@ vec KrigingModel::computeCorrelationVector(rowvec x) const{
 
 	for(unsigned int i=0;i<numberOfSamples;i++){
 
-		r(i) = computeCorrelation(x, data.getRowX(i) );
+		r(i) = computeCorrelation(x, data.getRowX(i),theta);
 
 	}
 
@@ -478,24 +533,50 @@ vec KrigingModel::computeCorrelationVector(rowvec x) const{
 
 double KrigingModel::interpolate(rowvec xp ) const{
 
-
 	double estimateLinearRegression = 0.0;
 	double estimateKriging = 0.0;
-
 
 	if(ifUsesLinearRegression ){
 
 		estimateLinearRegression = linearModel.interpolate(xp);
 	}
 
-	vec r = computeCorrelationVector(xp);
+	vec theta = Kriging_weights;
 
-	estimateKriging = beta0+ dot(r,R_inv_ys_min_beta);
+	vec r = computeCorrelationVector(xp,theta);
+
+	estimateKriging = beta0 + dot(r,R_inv_ys_min_beta);
 
 	return estimateLinearRegression + estimateKriging;
 
 }
 
+vec KrigingModel::interpolate_vec(rowvec xp) const{
+
+  /* double estimateLinearRegression = 0.0;
+
+	double estimateKriging = 0.0;
+
+	if(ifUsesLinearRegression ){
+
+		estimateLinearRegression = linearModel.interpolate(xp);
+	} */
+
+	vec mean; mean.zeros(rank);
+
+	for (unsigned int i=0; i< rank; i++){
+
+		vec theta = Kriging_weights_vec[i];
+
+		vec r = computeCorrelationVector(xp,theta);
+
+		mean(i) = beta0_vec[i] + dot(r,R_inv_ys_min_beta_vec[i]);
+
+	}
+
+	return mean;
+
+}
 
 
 void KrigingModel::calculateExpectedImprovement(CDesignExpectedImprovement &currentDesign) const{
@@ -504,6 +585,7 @@ void KrigingModel::calculateExpectedImprovement(CDesignExpectedImprovement &curr
 	double ssqr   = 0.0;
 
 	interpolateWithVariance(currentDesign.dv,&ftilde,&ssqr);
+
 
 #if 0
 	printf("ftilde = %15.10f, ssqr = %15.10f\n",ftilde,ssqr);
@@ -526,7 +608,6 @@ void KrigingModel::calculateExpectedImprovement(CDesignExpectedImprovement &curr
 		printf("ymin = %15.10f\n",ymin);
 #endif
 
-
 		expectedImprovementValue = (ymin - ftilde)*cdf(Z,0.0,1.0)+ sigma * pdf(Z,0.0,1.0);
 	}
 	else{
@@ -541,8 +622,6 @@ void KrigingModel::calculateExpectedImprovement(CDesignExpectedImprovement &curr
 	currentDesign.objectiveFunctionValue = ftilde;
 	currentDesign.valueExpectedImprovement = expectedImprovementValue;
 
-
-
 }
 
 
@@ -550,38 +629,67 @@ void KrigingModel::calculateExpectedImprovement(CDesignExpectedImprovement &curr
 void KrigingModel::interpolateWithVariance(rowvec xp,double *ftildeOutput,double *sSqrOutput) const{
 
 	assert(this->ifInitialized);
+
 	unsigned int N = data.getNumberOfSamples();
 
 	*ftildeOutput =  interpolate(xp);
 
 	vec R_inv_r(N);
 
-	vec r = computeCorrelationVector(xp);
+	vec theta = Kriging_weights;
 
-	/* solve the linear system R x = r by Cholesky matrices U and L*/
-	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_r, r);
+	vec r = computeCorrelationVector(xp,theta);
 
+	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_r, r);  // solve the linear system R x = r by Cholesky matrices U and L
 
 	*sSqrOutput = sigmaSquared*( 1.0 - dot(r,R_inv_r)+ ( pow( (dot(r,R_inv_I) -1.0 ),2.0)) / (dot(vectorOfOnes,R_inv_I) ) );
 
+	//cout << "predict MSE is " << sigmaSquared << endl;
+
+}
+
+void KrigingModel::interpolateWithVariance_vec(rowvec xp,vec &ftildeOutput,vec & sSqrOutput) const{
+
+	assert(this->ifInitialized);
+
+	unsigned int N = data.getNumberOfSamples();
+
+	vec R_inv_r(N);
+
+	ftildeOutput.zeros(rank);  sSqrOutput.zeros(rank);
+
+	for (unsigned int i=0; i< rank; i++){
+
+		vec theta = Kriging_weights_vec[i];
+
+		vec r = computeCorrelationVector(xp,theta);
+
+		ftildeOutput(i) = beta0_vec[i] + dot(r,R_inv_ys_min_beta_vec[i]);
+
+	    solveLinearSystemCholesky(upperDiagonalMatrix_vec[i], R_inv_r, r);  // solve the linear system R x = r by Cholesky matrices U and L
+
+	    sSqrOutput(i) = sigmaSquared_vec[i]*( 1.0 - dot(r,R_inv_r)+ ( pow( (dot(r,R_inv_I) -1.0 ),2.0)) / (dot(vectorOfOnes,R_inv_I) ) );
+
+	}
 
 }
 
 
-/*double KrigingModel::computeCorrelation(rowvec x_i, rowvec x_j) const {
+double KrigingModel::computeCorrelation(rowvec x_i, rowvec x_j,vec theta) const {
 
 	unsigned int dim = data.getDimension();
 	double sum = 0.0;
-	for (unsigned int k = 0; k < dim; k++) {
 
-		sum += theta(k) * pow(fabs(x_i(k) - x_j(k)), gamma(k));
-		//sum += theta(k) * pow(fabs(x_i(k) - x_j(k)), 2);
+	for (unsigned int k = 0; k < dim; k++) {
+	   //sum += theta(k) * pow(fabs(x_i(k) - x_j(k)), gamma(k));
+		sum += theta(k) * pow(fabs(x_i(k) - x_j(k)), 2);
 	}
 
 	return exp(-sum);
-}*/
+}
 
-double KrigingModel::computeCorrelation(rowvec x_i, rowvec x_j) const {
+/*
+double KrigingModel::computeCorrelation(rowvec x_i, rowvec x_j,vec theta) const {
 
 	unsigned int dim = data.getDimension();
 	double xi = 0.0;
@@ -602,7 +710,7 @@ double KrigingModel::computeCorrelation(rowvec x_i, rowvec x_j) const {
 
 	return prod(ss);
 }
-
+*/
 
 void KrigingModel::computeCorrelationMatrix(void)  {
 
@@ -614,9 +722,11 @@ void KrigingModel::computeCorrelationMatrix(void)  {
 
 	correlationMatrix.fill(0.0);
 
+	vec theta = Kriging_weights;
+
 	 for (unsigned int i = 0; i < N; i++) {
 		for (unsigned int j = i + 1; j < N; j++) {
-			double R = computeCorrelation(data.getRowX(i), data.getRowX(j));
+			double R = computeCorrelation(data.getRowX(i), data.getRowX(j),theta);
 			correlationMatrix(i, j) = R;
 			correlationMatrix(j, i) = R;
 		}
@@ -629,8 +739,303 @@ void KrigingModel::computeCorrelationMatrix(void)  {
 }
 
 
+double KrigingModel::likelihood_function(vec theta){
+
+	unsigned int dim = data.getDimension();
+	unsigned int N   = data.getNumberOfSamples();
+	int mn = N;
+
+	mat X = data.getInputMatrix();
+
+	vec y = data.getOutputVector();
+
+	// correlationMatrix = correlationfunction.corrbiquadspline_kriging(X,theta);
+
+	correlationMatrix = correlationfunction.corrgaussian_kriging(X,theta);   // using Guassian kernel
+
+	upperDiagonalMatrix = chol(correlationMatrix);
+
+	long double logdetR = 2*sum(log(diagvec(upperDiagonalMatrix)));
+
+	vec R_inv_ys(mn); R_inv_ys.fill(0.0);
+
+	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_ys, y);    /* solve R x = ys */
+
+	R_inv_I = zeros(mn);
+
+	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_I, vectorOfOnes);      /* solve R x = F */
+
+	beta0 = (1.0/dot(vectorOfOnes,R_inv_I)) * (dot(vectorOfOnes,R_inv_ys));
+
+	vec ys_min_betaF = y - beta0*vectorOfOnes;
+
+	/* solve R x = ys-beta0*I */
+
+	solveLinearSystemCholesky(upperDiagonalMatrix, R_inv_ys_min_beta , ys_min_betaF);
+
+	sigmaSquared = (1.0 / (mn)) * dot(ys_min_betaF, R_inv_ys_min_beta);
+
+    likelihood = mn * log(sigmaSquared) + logdetR;
+
+    return likelihood;
+
+}
 
 void KrigingModel::train(void){
+
+
+	if(!ifInitialized){
+		initializeSurrogateModel();
+	}
+
+	unsigned int dim = data.getDimension();
+
+	vec hyper_l = 0.0001*dim*ones(dim,1);
+	vec hyper_u = 10*dim*ones(dim,1);
+
+	num = 10;   // Multiple starts
+
+	if (ifVectorOutput){
+
+	   for (unsigned int i = 0; i< rank; i++){
+
+		  assignOutput(i);
+
+		  boxmin(hyper_l,hyper_u,num);    // Hooke Jeeves algorithm for hyper-parameter optimization
+
+		  Kriging_weights_vec[i] = getOptimalTheta();
+
+		  likelihood_optimal_vec.push_back(getOptimalLikelihood());
+
+	   }
+
+	  }else {
+
+		  boxmin(hyper_l,hyper_u,num);
+
+		  Kriging_weights = getOptimalTheta();
+
+		  likelihood_optimal  = getOptimalLikelihood();
+	  }
+
+    //cout << "Optimal likelihood is " << likelihood_optimal << endl;
+
+	updateAuxilliaryFields();
+
+}
+
+
+void KrigingModel::boxmin(vec hyper_l, vec hyper_u, int num){
+
+	dim = getDimension();
+
+	mat hyper = ones(dim,num);
+	vec likeli_value = ones(num);
+
+	vec log_ub = log10(hyper_u);
+	vec log_lb = log10(hyper_l);
+    vec random;  random.randu(num);
+
+    hyper_cur = hyper;
+    likelihood_cur = likeli_value;
+
+	for (unsigned int i=0;i<dim;i++){
+	  for (unsigned int j=0;j<num;j++){
+		  hyper(i,j) = pow(10,random(j)*(log_ub(i)-log_lb(i))+log_lb(i));
+	  }
+    }
+
+	hyper_lb  = hyper_l;    //  lower bound
+	hyper_up  = hyper_u;    //  upper bound
+
+	//#pragma omp parallel for
+
+	for (unsigned int kk=0;kk<num;kk++){      // Multi-starts
+
+	  start(hyper.col(kk),hyper_lb,hyper_up,kk);
+
+	  int kmax;
+
+	  if (dim < 2)
+	      { kmax = 2;}
+      else
+	      { kmax = std::min(dim,4);}
+
+	  for (unsigned int k = 0; k < kmax; k++){  // Iterate for kmax times
+
+	   vec hyper1 = hyper_cur.col(kk);
+
+	   explore(hyper_cur.col(kk),likelihood_cur(kk),kk);
+
+	   move(hyper1,hyper_cur.col(kk),likelihood_cur(kk),kk);
+
+	   // cout << "current likelihood is " << likelihood_cur(kk) << endl;
+
+	 }
+
+	}
+
+	likeli_value = getLikelihood();
+	hyper = getTheta();
+
+	uword i = likeli_value.index_min();
+
+	likelihood_optimal = likeli_value(i);
+	hyper_optimal = hyper.col(i);
+
+}
+
+void KrigingModel::start(vec hyper_in, vec hyper_l, vec hyper_u, int kk){
+
+	  vec m = linspace(1,dim,dim)/(dim+2);
+	  increment = zeros(dim);
+
+	  for (unsigned int k = 0; k < dim; k++){
+		  increment(k) = pow(2,m(k));
+	   }
+
+	  ind_increment = find(increment != 1);
+
+	  hyper_cur.col(kk) = hyper_in;
+
+	  likelihood_cur(kk) = likelihood_function(hyper_cur.col(kk));
+
+	  numberOfIteration = 0;
+      hyperoptimizationHistory = zeros(dim+2,200*dim);
+
+	  hyperoptimizationHistory.col(numberOfIteration) = join_cols(hyper_cur.col(kk), vec { likelihood_cur(kk), 1.0} );
+
+
+}
+
+void KrigingModel::explore(vec hyper_1, double likelihood_1, int kk){
+
+	unsigned int j; double DD;  unsigned int atbd;
+
+    hyper_cur.col(kk) = hyper_1; likelihood_cur(kk) = likelihood_1;
+
+	for (unsigned int k = 0; k < size(ind_increment,0); k++){
+
+	   j = ind_increment(k);
+	   hyper_par = hyper_cur.col(kk);
+       DD = increment(j);
+
+       if (hyper_cur(j,kk) == hyper_up(j)){
+
+    	   atbd = 1;
+    	   hyper_par(j) =  hyper_cur(j,kk)/sqrt(DD); }
+
+       else if (hyper_cur(j,kk) == hyper_lb(j)){
+
+    	   atbd = 1;
+    	   hyper_par(j) =  hyper_cur(j,kk)*sqrt(DD); }
+
+       else  {
+
+    	   atbd = 0;
+    	   hyper_par(j) = std::min(hyper_up(j),hyper_cur(j,kk)*DD);
+       }
+
+       likelihood = likelihood_function(hyper_par);
+       numberOfIteration++;
+       hyperoptimizationHistory.col(numberOfIteration)= join_cols(hyper_par, vec { likelihood, 2});
+
+       if (likelihood < likelihood_cur(kk)){
+            likelihood_cur(kk) = likelihood;
+            hyper_cur.col(kk) = hyper_par;  }
+       else  {
+
+    	    hyperoptimizationHistory(dim+1,numberOfIteration)= -2;
+
+    	   if (!atbd) {
+    		    hyper_par(j) = std::max(hyper_lb(j),hyper_cur(j,kk)/DD);
+    	        likelihood = likelihood_function(hyper_par);
+
+    	        numberOfIteration++;
+    	        hyperoptimizationHistory.col(numberOfIteration)=join_cols(hyper_par, vec { likelihood, 2});
+
+    	        if (likelihood < likelihood_cur(kk)){
+    	        	likelihood_cur(kk) = likelihood;
+    	        	hyper_cur.col(kk) = hyper_par;  }
+    	        else
+    	            hyperoptimizationHistory(dim+1,numberOfIteration)= -2;
+    	    }
+	     }
+	  }
+
+}
+
+void KrigingModel::move(vec hyper_old,vec hyper_new, double likelihood_new, int kk){
+
+	   vec v  = hyper_new/hyper_old;
+	   vec v1 = v-ones(dim,1);
+
+       if (v1.is_zero()){
+
+    	   vec ind = linspace(1,dim,dim);
+    	   ind(dim-1) = 0;
+
+    	   for (unsigned int k = 0; k < dim; k++){
+    	  	    increment(k) = pow(increment(ind(k)),0.2);
+    	    }
+
+    	   likelihood_cur(kk) = likelihood_new;
+    	   hyper_cur.col(kk) = hyper_new;
+
+            return ;
+        }
+
+        unsigned int rept = 1;   likelihood_cur(kk) = likelihood_new;  hyper_cur.col(kk) = hyper_new;
+
+        while (rept){
+
+		   hyper_par = min(join_rows(hyper_up,max(join_rows(hyper_lb,hyper_new % v),1)),1);
+		   likelihood = likelihood_function(hyper_par);
+		   numberOfIteration++;
+		   hyperoptimizationHistory.col(numberOfIteration)= join_cols(hyper_par, vec { likelihood, 3});
+
+		   if (likelihood < likelihood_cur(kk)){
+			   hyper_cur.col(kk) = hyper_par;
+			   likelihood_cur(kk) = likelihood;
+			   v = v % v;
+		   }
+
+		   else {
+			   hyperoptimizationHistory(dim+1,numberOfIteration)= -3;
+			   rept = 0;
+
+		   }
+
+		   if (size(find(hyper_par - hyper_up),0)+size(find(hyper_par - hyper_up),0) < 2*dim)
+			    rept  =  0;
+        }
+
+         vec ind = linspace(1,dim,dim);
+         ind(dim-1) = 0;
+
+         for (unsigned int k = 0; k < dim; k++){
+          	 increment(k) = pow(increment(ind(k)),0.25);
+          }
+}
+
+mat KrigingModel::getTheta(void) const{
+	return hyper_cur;
+}
+
+vec KrigingModel::getOptimalTheta(void) const{
+	return hyper_optimal;
+}
+
+
+vec KrigingModel::getLikelihood(void) const{
+	return likelihood_cur;
+}
+
+double KrigingModel::getOptimalLikelihood(void) const{
+	return likelihood_optimal;
+}
+
+/*void KrigingModel::train(void){
 
 	total_number_of_function_evals = 0;
 
@@ -641,6 +1046,7 @@ void KrigingModel::train(void){
 	output.printMessage("Training Kriging response surface for the data: " + filenameDataInput);
 
 	vec y = data.getOutputVector();
+
 	vec ysKriging = y;
 
 
@@ -663,10 +1069,10 @@ void KrigingModel::train(void){
 
 	int max_number_of_function_calculations =  this->numberOfTrainingIterations;
 
-	/* initialize random seed*/
+	// initialize random seed
 	srand (time(NULL));
 
-	/* get the number of treads */
+	// get the number of treads
 	int number_of_treads = 1;
 #pragma omp parallel
 	{
@@ -778,7 +1184,7 @@ void KrigingModel::train(void){
 
 		for (int i = 0; i < max_number_of_function_calculations; i++) {
 
-			/* update population properties after initital iterations */
+			// update population properties after initital iterations
 			if (i >= number_of_initial_population) {
 
 				update_population_properties (population);
@@ -927,7 +1333,7 @@ void KrigingModel::train(void){
 
 		}
 
-	} /* end of parallel section */
+	} // end of parallel section
 
 
 	output.printMessage("Kring training is done...");
@@ -937,11 +1343,11 @@ void KrigingModel::train(void){
 
 	updateAuxilliaryFields();
 
-}
+}*/
 
 
 
-
+/*
 
 EAdesign::EAdesign(int dimension){
 
@@ -972,7 +1378,7 @@ int EAdesign::calculate_fitness(double epsilon, mat &X,vec &ys){
 	double logdetR = 0.0;
 	double objVal = 0.0;
 
-	unsigned int N = X.n_rows;  /* number of samples */
+	unsigned int N = X.n_rows;  // number of samples
 
 
 	mat R(N,N,fill::zeros);
@@ -1029,8 +1435,8 @@ int EAdesign::calculate_fitness(double epsilon, mat &X,vec &ys){
 	vec R_inv_ys(N,fill::zeros);
 	vec R_inv_I(N,fill::zeros);
 
-	solveLinearSystemCholesky(U, R_inv_ys, ys); /* solve R x = ys */
-	solveLinearSystemCholesky(U, R_inv_I, I);   /* solve R x = I */
+	solveLinearSystemCholesky(U, R_inv_ys, ys); // solve R x = ys
+	solveLinearSystemCholesky(U, R_inv_I, I);   // solve R x = I
 
 
 
@@ -1045,7 +1451,8 @@ int EAdesign::calculate_fitness(double epsilon, mat &X,vec &ys){
 	vec R_inv_ys_min_beta(N,fill::zeros);
 
 
-	/* solve R x = ys-beta0*I */
+	// solve R x = ys-beta0*I
+
 	solveLinearSystemCholesky(U, R_inv_ys_min_beta, ys_min_betaI);
 
 
@@ -1087,11 +1494,11 @@ int EAdesign::calculate_fitness(double epsilon, mat &X,vec &ys){
 
 
 
-}
+}*/
 
+/*
 
-
-/* print all the population (can be a lot of mess!)*/
+// print all the population (can be a lot of mess!)
 
 void print_population(std::vector<EAdesign> population){
 
@@ -1109,12 +1516,7 @@ void print_population(std::vector<EAdesign> population){
 }
 
 
-
-
-
-
-
-/* crossover function of two designs */
+// crossover function of two designs
 void crossover_kriging(EAdesign &father, EAdesign &mother, EAdesign &child) {
 
 	int dim = father.theta.size();
@@ -1141,16 +1543,16 @@ void crossover_kriging(EAdesign &father, EAdesign &mother, EAdesign &child) {
 #endif
 	}
 
-	/*
-	child.log_regularization_parameter =
-			random_number(father.log_regularization_parameter,
-					mother.log_regularization_parameter, 4.0);
+
+	//child.log_regularization_parameter =
+	//		random_number(father.log_regularization_parameter,
+	//				mother.log_regularization_parameter, 4.0);
+    //
+
+	//if(child.log_regularization_parameter < 0 ) child.log_regularization_parameter=0.0;
+	//if(child.log_regularization_parameter > 14 ) child.log_regularization_parameter=14.0;
 
 
-	if(child.log_regularization_parameter < 0 ) child.log_regularization_parameter=0.0;
-	if(child.log_regularization_parameter > 14 ) child.log_regularization_parameter=14.0;
-
-	 */
 
 
 }
@@ -1236,7 +1638,7 @@ void update_population_properties(std::vector<EAdesign> &population) {
 		it->crossover_probability = it->fitness / sum_fitness;
 	}
 
-}
+}*/
 
 
 

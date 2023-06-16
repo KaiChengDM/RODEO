@@ -99,18 +99,19 @@ void GEKModel::initializeSurrogateModel(void){
 	modelID = GRADIENT_ENHANCED_KRIGING;
 	ifHasGradientData = true;
 
-	readData();                 // Modified by Kai
-	normalizeData();            // Modified by Kai
+	readData();
+	normalizeData();
 
 	numberOfHyperParameters = dim;
 
-	GEK_weights =zeros<vec>(numberOfHyperParameters);
+	GEK_weights = zeros<vec>(numberOfHyperParameters);
 
 	/* regularization term */
 
 	epsilonGEK = 0.0;
 
 	/* check if two sample are too close to each other */
+
 	for(unsigned int i=0; i<numberOfSamples; i++){
 
 		rowvec sample1 = data.getRowX(i);
@@ -129,15 +130,13 @@ void GEKModel::initializeSurrogateModel(void){
 	}
 
 	sigmaSquared = 0.0;
-	beta0 = 0.0;
+	beta0        = 0.0;
 
-
-	correlationMatrixDot = zeros(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
-	upperDiagonalMatrixDot= zeros<mat>(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
-
-	R_inv_ys_min_beta = zeros<vec>(numberOfSamples*(dim+1));
-	R_inv_F= zeros<vec>(numberOfSamples*(dim+1));
-	vectorOfF= zeros<vec>(numberOfSamples*(dim+1));
+	correlationMatrixDot   = zeros(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
+	upperDiagonalMatrixDot = zeros<mat>(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
+	R_inv_ys_min_beta      = zeros<vec>(numberOfSamples*(dim+1));
+	R_inv_F                = zeros<vec>(numberOfSamples*(dim+1));
+	vectorOfF              = zeros<vec>(numberOfSamples*(dim+1));
 
 	for(unsigned int i=0; i<numberOfSamples; i++) {
 
@@ -153,7 +152,7 @@ void GEKModel::initializeSurrogateModel(void){
 
 	for(unsigned int i=0; i<numberOfSamples; i++){
 
-		yGEK(i) =y(i);
+		yGEK(i) = y(i);
 
 	}
 
@@ -162,6 +161,8 @@ void GEKModel::initializeSurrogateModel(void){
 	mat gradientData = data.getGradientMatrix();
 
 	Bounds boxConstraints = data.getBoxConstraints();
+
+	double std_y =  data.getOutputStd();
 
 	for(unsigned int i=0; i<dim; i++){
 
@@ -172,7 +173,7 @@ void GEKModel::initializeSurrogateModel(void){
 			double xmin = boxConstraints.getLowerBound(i);
 			double xmax = boxConstraints.getUpperBound(i);
 
-			yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin )*dim;
+			yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin )*dim/std_y;
 			//yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin );
 
 
@@ -210,12 +211,13 @@ void GEKModel::printHyperParameters(void) const{
 void GEKModel::saveHyperParameters(void) const{
 
 
-
 }
+
 void GEKModel::loadHyperParameters(void){
 
 
 }
+
 void GEKModel::train(void){
 
 	if(!ifInitialized){
@@ -224,24 +226,27 @@ void GEKModel::train(void){
 
 	unsigned int dim = data.getDimension();
 
-	vec hyper_l = 0.0005*dim*ones(dim,1);
-	vec hyper_u = 5*dim*ones(dim,1);
+	vec hyper_l = 0.001*dim*ones(dim,1);
+	vec hyper_u = 10*dim*ones(dim,1);
 
 	num = 10;                       // Multiple starts
 
 	clock_t start, finish;
 
-	//start = clock();
+	start = clock();
 
 	boxmin(hyper_l,hyper_u,num);    // Hooke Jeeves algorithm for hyper-parameter optimization
 
-	//finish = clock();
+	finish = clock();
 
-	//cout << "GEK model training time is " << (double)(finish-start)/CLOCKS_PER_SEC  <<endl;
+	cout << "GEK model training time is " << (double)(finish-start)/CLOCKS_PER_SEC  << endl;
 
 	GEK_weights = getOptimalTheta();
 
 	likelihood_optimal  = getOptimalLikelihood();
+
+	// cout << "GEK model hyper-paraemter is " << GEK_weights  << endl;
+	// cout << "GEK model likelihood is " << likelihood_optimal << endl;
 
 #if 0
 	printVector(GEK_weights,"GEK_weights");
@@ -265,24 +270,15 @@ double GEKModel::likelihood_function(vec theta){
 
 	long double logdetR = 2*sum(log(diagvec(upperDiagonalMatrixDot)));
 
-	// cout << "determinant is " << logdetR << endl;
-
 	vec R_inv_ys(mn); R_inv_ys.fill(0.0);
 
-	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys, yGEK);    /* solve R x = ys */
+	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys, yGEK);         /* solve R x = ys */
 
 	R_inv_F = zeros(mn);
 
 	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_F, vectorOfF);      /* solve R x = F */
 
-	 beta0 = (1.0/dot(vectorOfF,R_inv_F)) * (dot(vectorOfF,R_inv_ys));
-
-
-	//beta0 = vectorOfF.t() % solve(upperDiagonalMatrixDot,solve(upperDiagonalMatrixDot.t(),yGEK));
-
-	 //cout << "output is " << yGEK << endl;
-
-	 //cout << "beta0 is " << solve(upperDiagonalMatrixDot,solve(upperDiagonalMatrixDot.t(),yGEK)) << endl;
+	beta0 = (1.0/dot(vectorOfF,R_inv_F)) * (dot(vectorOfF,R_inv_ys));
 
 	vec ys_min_betaF = yGEK - beta0*vectorOfF;
 
@@ -292,11 +288,7 @@ double GEKModel::likelihood_function(vec theta){
 
 	sigmaSquared = (1.0 / (mn)) * dot(ys_min_betaF, R_inv_ys_min_beta);
 
-	// cout << "sigmaSquared is " << sigmaSquared << endl;
-
     likelihood = mn * log(sigmaSquared) + logdetR;
-
-    // cout << "likelihood is " << likelihood << endl;
 
     return likelihood;
 
@@ -318,6 +310,14 @@ double GEKModel::likelihood_function(vec theta){
 	return fGEK;
 
 }
+
+ vec GEKModel::interpolate_vec(rowvec x ) const {
+
+	 cout << "ERROR: interpolate for vector output has not been utilized in GEK \n";
+	 abort();
+
+ }
+
 
 /* mat GEKModel::interpolate_all(mat xtest) {
 
@@ -342,7 +342,7 @@ double GEKModel::likelihood_function(vec theta){
 
 void GEKModel::interpolateWithVariance(rowvec xp,double *ftildeOutput,double *sSqrOutput) const {
 
-	unsigned int dim = data.getDimension();
+	unsigned int dim             = data.getDimension();
 	unsigned int numberOfSamples = data.getNumberOfSamples();
 
 	*ftildeOutput =  interpolate(xp);
@@ -360,13 +360,16 @@ void GEKModel::interpolateWithVariance(rowvec xp,double *ftildeOutput,double *sS
 }
 
 
+void GEKModel::interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const{
+
+	cout << "ERROR: interpolateWithVariance for vector output has not been utilized in GEK \n";
+	abort();
+
+}
+
 /*
- *
- *
  * derivative of R(x^i,x^j) w.r.t. x^i_k (for GEK)
- *
- *
- * */
+ * /
 
 /* double GEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
 
@@ -378,7 +381,34 @@ void GEKModel::interpolateWithVariance(rowvec xp,double *ftildeOutput,double *sS
 	return result;
 }*/
 
-double GEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
+ double GEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
+
+	vec theta = GEK_weights;
+	double R  = computeCorrelation(x_i, x_j, theta);
+
+	double result;
+	double xi;
+	double ui;
+
+	// result= -2.0*theta(k)* (x_i(k)-x_j(k))* R;
+
+	xi = fabs(x_i(k)-x_j(k))*theta(k);
+	ui = sign(x_i(k)-x_j(k))*theta(k);
+
+	double xi2 = xi*xi; double xi3 = xi2*xi;  double xi4 = xi3*xi;
+
+	if (xi <= 0.4)
+		 { result = -ui*(-30*xi + 105*xi2 - 195.0/2*xi3)/(1 - 15*xi2 + 35*xi3 - 195.0/8*xi4)*R;}
+    else if (xi < 1)
+		 { result = -ui*(-20.0/3 + 20*xi- 20*xi2 + 20.0/3*xi3)/(5/3 - 20.0/3*xi + 10*xi2 - 20.0/3*xi3 + 5.0/3*xi4)*R;}
+	else
+		 { result = 0;}
+
+	return result;
+
+}
+
+/* double GEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
 
 	vec theta = GEK_weights;
 	double result;
@@ -386,18 +416,25 @@ double GEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
     double ui;
 	double R = computeCorrelation(x_i, x_j, theta);
 
-	/*result= -2.0*theta(k)* (x_i(k)-x_j(k))* R; */
+	// result= -2.0*theta(k)* (x_i(k)-x_j(k))* R;
 
-	xi = fabs(x_i(k)-x_j(k))*theta(k);       /* Modified by Kai Cheng */
-	ui  = sign(x_i(k)-x_j(k))*theta(k);
+	xi = fabs(x_i(k)-x_j(k))*theta(k);
+	ui = sign(x_i(k)-x_j(k))*theta(k);
+
 	if (xi <= 0.4)
+
 		 { result = -ui*(-30*xi + 105*pow(xi,2) - 195.0/2*pow(xi,3))/(1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4))*R;}
+
     else if (xi < 1)
+
 		 { result = -ui*(-20.0/3 + 20*xi- 20*pow(xi,2) + 20.0/3*pow(xi,3))/(5/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4))*R;}
+
 	else
+
 		 { result = 0;}
+
 	return result;
-}
+}*/
 
 /*
  * derivative of R(x^i,x^j) w.r.t. x^j_k (for GEK)
@@ -417,32 +454,63 @@ double GEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
 double GEKModel::computedR_dxj(rowvec x_i, rowvec x_j, int k) const {
 
 	vec theta = GEK_weights;
-	double result = 0.0;
 	double R = computeCorrelation(x_i, x_j, theta);
+
     double xi;
     double ui;
+	double result;
 
-    /* result= 2.0*theta(k)* (x_i(k)-x_j(k))* R;*/
+    // result= 2.0*theta(k)* (x_i(k)-x_j(k))* R;
 
-	xi = fabs(x_i(k)-x_j(k))*theta(k);     /* Modified by Kai Cheng */
-	ui  = sign(x_i(k)-x_j(k))*theta(k);
+	xi = fabs(x_i(k)-x_j(k))*theta(k);
+	ui = sign(x_i(k)-x_j(k))*theta(k);
+
+	double xi2 = xi*xi; double xi3 = xi2*xi;  double xi4 = xi3*xi;
+
 	if (xi <= 0.4)
-       { result = -ui*(-30*xi + 105*pow(xi,2) - 195.0/2*pow(xi,3))/(1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4))*R;}
+       { result = -ui*(-30*xi + 105*xi2 - 195.0/2*xi3)/(1 - 15*xi2 + 35*xi3 - 195.0/8*xi4)*R;}
     else if (xi < 1)
-	   { result = -ui*(-20.0/3 + 20*xi- 20*pow(xi,2) + 20.0/3*pow(xi,3))/(5.0/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4))*R;}
+	   { result = -ui*(-20.0/3 + 20*xi- 20*xi2 + 20.0/3*xi3)/(5.0/3 - 20.0/3*xi + 10*xi2 - 20.0/3*xi3 + 5.0/3*xi4)*R;}
 	else
 	   { result = 0;}
 
 	return result;
+
 }
 
+/*
+double GEKModel::computedR_dxj(rowvec x_i, rowvec x_j, int k) const {
+
+	vec theta     = GEK_weights;
+	double result = 0.0;
+	double R      = computeCorrelation(x_i, x_j, theta);
+    double xi;
+    double ui;
+
+    // result= 2.0*theta(k)* (x_i(k)-x_j(k))* R;
+
+	xi  = fabs(x_i(k)-x_j(k))*theta(k);
+	ui  = sign(x_i(k)-x_j(k))*theta(k);
+
+	if (xi <= 0.4)
+
+       { result = -ui*(-30*xi + 105*pow(xi,2) - 195.0/2*pow(xi,3))/(1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4))*R;}
+
+    else if (xi < 1)
+
+	   { result = -ui*(-20.0/3 + 20*xi- 20*pow(xi,2) + 20.0/3*pow(xi,3))/(5.0/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4))*R;}
+
+	else
+
+	   { result = 0;}
+
+	return result;
+}*/
 
 /*
- *
  * second derivative of R(x^i,x^j) w.r.t. x^i_l and x^j_k (hand derivation)
  * (for GEK)
- *
- * */
+ * /
 
 /* double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 
@@ -462,6 +530,7 @@ double GEKModel::computedR_dxj(rowvec x_i, rowvec x_j, int k) const {
 	return dx;
 }*/
 
+/*
 double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 
 	double dx;
@@ -470,12 +539,14 @@ double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 	double ui1;
 	double xi2;
 	double ui2;
+
 	vec theta = GEK_weights;
+
 	double R = computeCorrelation(x_i, x_j, theta);
 
 	if (k == l){
 
-   /* dx = 2.0*theta(k)*(-2.0*theta(k)*pow((x_i(k)-x_j(k)),2.0)+1.0)*R;*/
+   // dx = 2.0*theta(k)*(-2.0*theta(k)*pow((x_i(k)-x_j(k)),2.0)+1.0)*R;
 
 	 xi = fabs(x_i(k)-x_j(k))*theta(k);
 	 if (xi <= 0.4)
@@ -488,9 +559,9 @@ double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 	}
 	if (k != l) {
 
-		/* dx = -4.0*theta(k)*theta(l)*(x_i(k)-x_j(k))*(x_i(l)-x_j(l))*R;*/
+		// dx = -4.0*theta(k)*theta(l)*(x_i(k)-x_j(k))*(x_i(l)-x_j(l))*R;
 
-		xi1  = fabs(x_i(k)-x_j(k))*theta(k);     /* Modified by Kai Cheng */
+		xi1  = fabs(x_i(k)-x_j(k))*theta(k);
 		ui1  = sign(x_i(k)-x_j(k))*theta(k);
 		xi2  = fabs(x_i(l)-x_j(l))*theta(l);
 		ui2  = sign(x_i(l)-x_j(l))*theta(l);
@@ -503,6 +574,62 @@ double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 		     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*pow(xi1,2) + 20.0/3*pow(xi1,3))*ui2*(-20.0/3 + 20*xi2- 20*pow(xi2,2) + 20.0/3*pow(xi2,3)))/((5/3 - 20.0/3*xi1 + 10*pow(xi1,2) - 20.0/3*pow(xi1,3) + 5.0/3*pow(xi1,4))*(5.0/3 - 20.0/3*xi2 + 10*pow(xi2,2) - 20.0/3*pow(xi2,3) + 5.0/3*pow(xi2,4)))*R;}
 		else if (xi1 < 0.4 && xi2 < 1 )
 		     { dx = -(ui1*(-30*xi1 + 105*pow(xi1,2) - 195.0/2*pow(xi1,3))*ui2*(-20.0/3 + 20*xi2- 20*pow(xi2,2) + 20.0/3*pow(xi2,3)))/((1 - 15*pow(xi1,2) + 35*pow(xi1,3) - 195.0/8*pow(xi1,4))*(5.0/3 - 20.0/3*xi2 + 10*pow(xi2,2) - 20.0/3*pow(xi2,3) + 5.0/3*pow(xi2,4)))*R;}
+		else
+			 { dx = 0;}
+	}
+
+	return dx;
+}*/
+
+
+double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
+
+	double dx;
+	double xi;
+	double xi1;
+	double ui1;
+	double xi2;
+	double ui2;
+
+	vec theta = GEK_weights;
+	double R  = computeCorrelation(x_i, x_j, theta);
+
+	if (k == l){
+
+    // dx = 2.0*theta(k)*(-2.0*theta(k)*pow((x_i(k)-x_j(k)),2.0)+1.0)*R;
+
+	 xi = fabs(x_i(k)-x_j(k))*theta(k);
+
+	 double xi_2 = xi*xi; double xi_3 = xi_2*xi;  double xi_4 = xi_3*xi;
+
+	 if (xi <= 0.4)
+		 { dx = -(-30 + 210*xi - 585.0/2*xi_2)*pow(theta(k),2)/(1-15*xi_2 + 35*xi_3-195.0/8*xi_4)*R;}
+	 else if (xi < 1)
+		 { dx = -(20 - 40*xi + 20*xi_2)*pow(theta(k),2)/(5.0/3 - 20.0/3*xi + 10*xi_2 - 20.0/3*xi_3 + 5.0/3*xi_4)*R;}
+     else
+		 { dx = 0;}
+
+	}
+	if (k != l) {
+
+		// dx = -4.0*theta(k)*theta(l)*(x_i(k)-x_j(k))*(x_i(l)-x_j(l))*R;
+
+		xi1  = fabs(x_i(k)-x_j(k))*theta(k);
+		ui1  = sign(x_i(k)-x_j(k))*theta(k);
+		xi2  = fabs(x_i(l)-x_j(l))*theta(l);
+		ui2  = sign(x_i(l)-x_j(l))*theta(l);
+
+	    double xi1_2 = xi1*xi1; double xi1_3 = xi1_2*xi1;  double xi1_4 = xi1_3*xi1;
+	    double xi2_2 = xi2*xi2; double xi2_3 = xi2_2*xi2;  double xi2_4 = xi2_3*xi2;
+
+		if (xi1 <= 0.4 && xi2 <= 0.4)
+			 { dx = -(ui1*(-30*xi1 + 105*xi1_2 - 195.0/2*xi1_3)*ui2*(-30*xi2 + 105*xi2_2 - 195.0/2*xi2_3))/((1 - 15*xi1_2 + 35*xi1_3 - 195.0/8*xi1_4)*(1 - 15*xi2_2 + 35*xi2_3 - 195.0/8*xi2_4))*R;}
+		else if (xi1 < 1 && xi2 <= 0.4)
+		     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*xi1_2 + 20.0/3*xi1_3)*ui2*(-30*xi2 + 105*xi2_2 - 195.0/2*xi2_3))/((5.0/3 - 20.0/3*xi1 + 10*xi1_2 - 20.0/3*xi1_3 + 5.0/3*xi1_4)*(1 - 15*xi2_2 + 35*xi2_3 - 195.0/8*xi2_4))*R;}
+		else if(xi1 < 1 && xi2 < 1 )
+		     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*xi1_2 + 20.0/3*xi1_3)*ui2*(-20.0/3 + 20*xi2- 20*xi2_2 + 20.0/3*xi2_3))/((5/3 - 20.0/3*xi1 + 10*xi1_2 - 20.0/3*xi1_3 + 5.0/3*xi1_4)*(5.0/3 - 20.0/3*xi2 + 10*xi2_2 - 20.0/3*xi2_3 + 5.0/3*xi2_4))*R;}
+		else if (xi1 < 0.4 && xi2 < 1 )
+		     { dx = -(ui1*(-30*xi1 + 105*xi1_2 - 195.0/2*xi1_3)*ui2*(-20.0/3 + 20*xi2- 20*xi2_2 + 20.0/3*xi2_3))/((1 - 15*xi1_2 + 35*xi1_3 - 195.0/8*xi1_4)*(5.0/3 - 20.0/3*xi2 + 10*xi2_2 - 20.0/3*xi2_3 + 5.0/3*xi2_4))*R;}
 		else
 			 { dx = 0;}
 	}
@@ -521,9 +648,9 @@ double GEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 	}
 
 	return exp(-sum);
-}*/
+}
 
-double GEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
+/* double GEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
 
 	unsigned int dim = data.getDimension();
 	double sum = 0.0;
@@ -538,6 +665,31 @@ double GEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
 			  {ss(k) = 1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4);}
 		  else if (xi < 1)
 			  {ss(k) = 5.0/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4);}
+		  else
+			  {ss(k) = 0;}
+        }
+
+	return prod(ss);
+}*/
+
+
+double GEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
+
+	unsigned int dim = data.getDimension();
+	double sum = 0.0;
+	double xi  = 0.0;
+	vec ss(dim);
+
+	for (unsigned int k = 0; k < dim; k++) {
+
+		  xi = fabs(x_i(k) - x_j(k))*theta(k);
+
+		  double xi2 = xi*xi;   double xi3 = xi2*xi;   double xi4 = xi3*xi;
+
+		  if (xi <= 0.4)
+			  {ss(k) = 1 - 15*xi2 + 35*xi3 - 195.0/8*xi4;}
+		  else if (xi < 1)
+			  {ss(k) = 5.0/3 - 20.0/3*xi + 10*xi2 - 20.0/3*xi3 + 5.0/3*xi4;}
 		  else
 			  {ss(k) = 0;}
         }
@@ -655,17 +807,16 @@ double GEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
 
 vec GEKModel::computeCorrelationVectorDot(rowvec x) const{
 
-
-	unsigned int dim = data.getDimension();
+	unsigned int dim             = data.getDimension();
 	unsigned int numberOfSamples = data.getNumberOfSamples();
-	mat X = data.getInputMatrix();
+
+	mat X     = data.getInputMatrix();
+	vec theta = GEK_weights;
 
 	vec r(numberOfSamples*(dim+1));
 
-	vec theta = GEK_weights;
-
-
 	int count = 0;
+
 	for(unsigned int i=0;i<numberOfSamples;i++){
 
 		r(count) = computeCorrelation(x, X.row(i), theta);
@@ -695,14 +846,15 @@ void GEKModel::updateAuxilliaryFields(void){
 	cout<<"Updating auxiliary variables of the GEK model\n";
 #endif
 
-	vec y = data.getOutputVector();
-	yGEK.set_size(N*(dim+1));
-	vec pd = zeros(N*dim) ;
-	mat gradientData = data.getGradientMatrix();
-
+	vec pd                = zeros(N*dim) ;
+	vec y                 = data.getOutputVector();
+	mat gradientData      = data.getGradientMatrix();
 	Bounds boxConstraints = data.getBoxConstraints();
+	double std_y =  data.getOutputStd();
 
-	for(unsigned int i=0; i<dim; i++){
+	yGEK.set_size(N*(dim+1));
+
+	for(unsigned int i = 0; i< dim; i++){
 
 		vec gradx = gradientData.col(i);
 
@@ -711,14 +863,14 @@ void GEKModel::updateAuxilliaryFields(void){
 			double xmin = boxConstraints.getLowerBound(i);
 			double xmax = boxConstraints.getUpperBound(i);
 			//yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin )*dim;
-			pd(i*N+j) = gradx(j)*( xmax - xmin )*dim;
+			pd(i*N+j) = gradx(j)*( xmax - xmin )*dim/std_y;
 
 		}
 	}
 
-	yGEK = join_cols(y,pd);
+	yGEK      = join_cols(y,pd);
 	vec theta = GEK_weights;
-	mat X = data.getInputMatrix();
+	mat X     = data.getInputMatrix();
 
 	correlationMatrixDot = correlationfunction.corrbiquadspline_gekriging(X,theta);
 
@@ -755,7 +907,7 @@ void GEKModel::updateAuxilliaryFields(void){
 
 	vec R_inv_ys(N*(dim+1)); R_inv_ys.fill(0.0);
 
-	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys, yGEK);    /* solve R x = ys */
+	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys, yGEK);         /* solve R x = ys */
 
 	R_inv_F = zeros(N*(dim+1));
 
@@ -770,6 +922,9 @@ void GEKModel::updateAuxilliaryFields(void){
 	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys_min_beta , ys_min_betaF);
 
 	sigmaSquared = (1.0 / (N*(dim+1))) * dot(ys_min_betaF, R_inv_ys_min_beta);
+
+	// cout << "sigmaSquared is " << sigmaSquared << endl;
+	// cout << "beta0 is " << beta0 << endl;
 }
 
 void GEKModel::addNewSampleToData(rowvec newsample){
@@ -802,7 +957,7 @@ void GEKModel::updateModelWithNewData(void){
 	resetDataObjects();
 	readData();
 
-	unsigned int N = data.getNumberOfSamples();
+	unsigned int N   = data.getNumberOfSamples();
 	unsigned int dim = data.getDimension();
 
 	normalizeData();
@@ -879,18 +1034,58 @@ void GEKModel::calculateExpectedImprovement(CDesignExpectedImprovement &currentD
 
 }
 
+
+
+/*void GEKModel::calculateExpectedImprovement_Grad(CDesignExpectedImprovement &currentDesign) const{  // Created by Kai
+
+	double ftilde = 0.0;
+	double ssqr   = 0.0;
+
+	interpolateWithVariance(currentDesign.dv,&ftilde,&ssqr);
+
+	double	sigma = sqrt(ssqr);
+
+	double expectedImprovementValue = 0.0;
+
+	if(fabs(sigma) > EPSILON){
+
+		double ymin = data.getMinimumOutputVector();
+		double	Z = (ymin - ftilde)/sigma;
+
+	#if 0
+		printf("Z = %15.10f\n",Z);
+		printf("ymin = %15.10f\n",ymin);
+	#endif
+
+
+		expectedImprovementValue = (ymin - ftilde)*cdf(Z,0.0,1.0)+ sigma * pdf(Z,0.0,1.0);
+	}
+	else{
+
+		expectedImprovementValue = 0.0;
+
+		}
+	#if 0
+		printf("expectedImprovementValue = %20.20f\n",expectedImprovementValue);
+	#endif
+
+		currentDesign.objectiveFunctionValue = ftilde;
+		currentDesign.valueExpectedImprovement = expectedImprovementValue;
+
+} */
+
 void GEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 
 	dim = getDimension();
 
-	mat hyper = ones(dim,num);
+	mat hyper        = ones(dim,num);
 	vec likeli_value = ones(num);
 
 	vec log_ub = log10(hyper_u);
 	vec log_lb = log10(hyper_l);
     vec random;  random.randu(num);
 
-    hyper_cur = hyper;
+    hyper_cur      = hyper;
     likelihood_cur = likeli_value;
 
 	for (unsigned int i=0;i<dim;i++){
@@ -904,9 +1099,8 @@ void GEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 
 
 	//#pragma omp parallel for
-	for (unsigned int kk=0;kk<num;kk++){      // Multi-starts
 
-     // cout<< "Iteration number " << kk << endl;
+	for (unsigned int kk=0;kk<num;kk++){      // Multi-starts
 
 	  start(hyper.col(kk),hyper_lb,hyper_up,kk);
 
@@ -915,7 +1109,7 @@ void GEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 	  if (dim < 2)
 	      { kmax = 2;}
       else
-	      { kmax = std::min(dim,4);}
+	      { kmax = std::min(dim,5);}
 
 	  for (unsigned int k = 0; k < kmax; k++){  // Iterate for kmax times
 
@@ -927,18 +1121,15 @@ void GEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 
 	 }
 
-	  // cout<< "Current theta is " << getTheta() << endl;
-	  //cout<< "Current likelihood is " << getLikelihood() << endl;
-
 	}
 
 	likeli_value = getLikelihood();
-	hyper = getTheta();
+	hyper        = getTheta();
 
 	uword i = likeli_value.index_min();
 
 	likelihood_optimal = likeli_value(i);
-	hyper_optimal = hyper.col(i);
+	hyper_optimal      = hyper.col(i);
 
 }
 

@@ -44,18 +44,23 @@
 class ConstraintDefinition{
 
 public:
-	std::string name;
+
 	std::string inequalityType;
+	std::string name;
 
 	std::string executableName;
 	std::string path;
 	std::string designVectorFilename;
-	std::string outputFilename;
+	std::string outputValueFilename;
+	std::string outputGradFilename;
+
 	std::string marker;
 	std::string markerForGradient;
 	std::string surrogatetype;
+	std::string jsonFile;
 
-	/* These are required only for multi-level option */
+ /* These are required only for multi-level option */
+
 	std::string executableNameLowFi;
 	std::string pathLowFi;
 	std::string outputFilenameLowFi;
@@ -67,11 +72,16 @@ public:
 
 
 	int ID = -1;
+    double value = 0;
+	int ID_vector_constraint=-1;
+	int ID_normal_constraint=-1;
+	int ID_gradient_constraint=-1;
+	int ID_nongradient_constraint=-1;
+
 	bool ifGradient = false;
 	bool ifGradientLowFi = false;
 	bool ifDefined = false;
-
-	double value;
+    bool if_vector_constraint = false;   // Created by Kai. For vector field constraint, e.g., f(t,x) > 0, for all t in [0,T].
 
 	ConstraintDefinition(std::string, std::string, double);
 	ConstraintDefinition(std::string);
@@ -88,11 +98,18 @@ class ConstraintFunction: public ObjectiveFunction {
 
 private:
 
-	std::string inequalityType;
-	double value;
+
+	int ID_vector_constraint=-1;
+	int ID_normal_constraint=-1;
+	int ID_gradient_constraint=-1;
+	int ID_nongradient_constraint=-1;
+
+	//double value;
+
 	bool ifRunNecessary = true;
 
 	int ID = -1;
+
 	bool ifInequalityConstraintSpecified  = false;
 
 	void readOutputWithoutMarkers(Design &d) const;
@@ -103,18 +120,20 @@ private:
 
 public:
 
+
 	ConstraintFunction(std::string, unsigned int);
 	ConstraintFunction(std::string, double (*objFun)(double *), unsigned int);
 
 	void readEvaluateOutput(Design &d);
 	bool checkFeasibility(double value) const;
 	void addDesignToData(Design &);
-
+   // void podROM();                 // proper orthogonal decomposition for dimension reduction
 
 	void setInequalityConstraint(ConstraintDefinition inequalityConstraint);
 	void setParametersByDefinition(ConstraintDefinition inequalityConstraint);
 
 	bool checkIfRunExecutableNecessary(void);
+
 	void evaluate(Design &d);
 
 	void setID(int givenID) {
@@ -124,9 +143,49 @@ public:
 	}
 
 	int getID(void) const {
-
 		return ID;
+	}
 
+
+	void setVectorConstraintID(int ID) {
+		 ID_vector_constraint = ID;
+	}
+
+
+	void setNormalConstraintID(int ID) {
+	     ID_normal_constraint= ID;
+	}
+
+	void setGradConstraintID(int ID) {
+
+	    ID_gradient_constraint = ID;
+	}
+
+	void setNonGradConstraintID(int ID){
+	    ID_nongradient_constraint = ID;
+	}
+
+	int getVectorConstraintID(void) const {
+		return ID_vector_constraint;
+	}
+
+	int getNormalConstraintID(void) const {
+		return ID_normal_constraint;
+	}
+
+	int getGradConstraintID(void) const {
+
+		return ID_gradient_constraint;
+	}
+
+	int getNonGradConstraintID(void) const {
+
+		return ID_nongradient_constraint;
+	}
+
+
+	int getVectorConstraintLength(int ID) {
+		return constraint_length;
 	}
 
 	void setrunOn(void) {

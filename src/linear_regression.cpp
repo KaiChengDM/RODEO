@@ -221,6 +221,22 @@ void LinearModel::interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr
 
 
 }
+
+void LinearModel::interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const{
+
+	cout << "ERROR: interpolateWithVariance does not exist for LinearModel\n";
+	abort();
+
+}
+
+vec LinearModel::interpolate_vec(rowvec xp) const{
+
+	cout << "ERROR: interpolate of vector output does not exist for LinearModel\n";
+	abort();
+
+}
+
+
 double LinearModel::interpolateWithGradients(rowvec xp) const{
 
 	cout << "ERROR: interpolateWithGradients does not exist for LinearModel\n";

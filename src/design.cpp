@@ -163,6 +163,23 @@ rowvec Design::constructSampleConstraint(unsigned int constraintID) const{
 	return sample;
 }
 
+
+rowvec Design::constructSampleConstraintVector(unsigned int constraintID) const{
+
+	int length = dimension+constraint_length[constraintID];
+
+	rowvec sample(length);
+
+	for(unsigned int i=0; i<dimension; i++){
+
+		sample(i) = designParameters(i);
+	}
+
+	sample.subvec(dimension,length-1) = constraint_vector[constraintID];
+
+	return sample;
+}
+
 rowvec Design::constructSampleConstraintWithGradient(unsigned int constraintID) const{
 
 	rowvec sample(2*dimension+1);
@@ -293,6 +310,7 @@ void Design::saveDesignVector(std::string fileName) const{
 
 	std::ofstream designVectorFile (fileName);
 	designVectorFile.precision(10);
+
 	if (designVectorFile.is_open())
 	{
 
@@ -351,6 +369,8 @@ void CDesignExpectedImprovement::generateRandomDesignVectorAroundASample(const r
 	}
 
 	dv = generateRandomRowVector(lowerBounds, upperBounds);
+
+	// cout<<"11 ERROR: NaN while reading external executable outputs!\n";
 
 
 }

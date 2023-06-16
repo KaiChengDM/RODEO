@@ -136,11 +136,12 @@ public:
 	void determineGammaBasedOnData(void);
 
 	double interpolate(rowvec x) const ;
+	vec interpolate_vec(rowvec x) const ;
 	double interpolateLowFi(rowvec x) const;
 	double interpolateError(rowvec x) const;
 
 	void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const;
-
+	void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const;
 	void calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const;
 	void addNewSampleToData(rowvec newsample);
 

@@ -328,7 +328,6 @@ double MultiLevelModel::interpolate(rowvec x) const{
 	cout<<"errorEstimate ="<<errorEstimate<<"\n";
 #endif
 
-
 	double distanceToHF = findNearestL1DistanceToAHighFidelitySample(x);
 	double distanceToLF = findNearestL1DistanceToALowFidelitySample(x);
 
@@ -357,6 +356,14 @@ double MultiLevelModel::interpolate(rowvec x) const{
 }
 
 
+
+vec MultiLevelModel::interpolate_vec(rowvec x) const{
+
+  cout << "ERROR: interpolate for vector output has not been utilized in MultiLevelModel \n";
+  abort();
+
+}
+
 double MultiLevelModel::interpolateLowFi(rowvec x) const{
 
 	return lowFidelityModel->interpolate(x);
@@ -384,6 +391,12 @@ void MultiLevelModel::interpolateWithVariance(rowvec xp,double *estimatedValue,d
 
 }
 
+void  MultiLevelModel::interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const{
+
+	cout << "ERROR: interpolateWithVariance for vector output has not been utilized in MultiLevelModel \n";
+	abort();
+
+}
 
 void MultiLevelModel::readHighFidelityData(void){
 

@@ -58,7 +58,13 @@ private:
 
 
 	std::vector<ConstraintDefinition> constraints;
+
 	int numberOfConstraints = 0;
+	int numberOfVectorConstraints = 0;              // for vector constraint
+	int numberOfNormalConstraints = 0;              // for function constraint
+
+	int numberOfGradConstraints = 0;                // constraint function with gradient information
+	int numberOfNonGradConstraints = 0;             // constraint function without gradient information
 
 	ObjectiveFunctionDefinition objectiveFunction;
 
@@ -129,6 +135,7 @@ public:
 
 	ObjectiveFunctionDefinition getObjectiveFunctionDefinition(void) const;
 	ConstraintDefinition getConstraintDefinition(unsigned int) const;
+
 	unsigned int getDimension(void) const;
 	std::string getProblemType(void) const;
 	std::string getProblemName(void) const;
@@ -139,6 +146,7 @@ public:
 	int runDriver(void);
 
 	Optimizer setOptimizationStudy(void);
+
 	void setOptimizationFeatures(Optimizer &) const;
 
 	void runOptimization(void);

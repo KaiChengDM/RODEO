@@ -50,6 +50,7 @@ protected:
 
 
 	vec yTest;
+	mat yVectorTest;     // for vector output
 	mat XTestraw;
 	mat XTest;
 
@@ -60,7 +61,6 @@ protected:
 
 	std::string filenameDataInput;
 	std::string filenameDataInputTest;
-	//std::string filenameDataOutput;  // Modified by Kai
 
 	std::string filenameTestResults;
 
@@ -68,20 +68,42 @@ protected:
 	unsigned int numberOfTrainingIterations  = 10000;
 
 	SurrogateModelData data;
+
 	OutputDevice output;
 
 	bool ifHasGradientData = false;
+	bool ifVectorOutput    = false;
 
+	// int  constraint_length;
+
+    /* Hooke Jeeves algorithm parameter
+    int num;
+    vec hyper_lb;
+    vec hyper_up;
+    vec hyper_in;
+
+    mat hyper_cur;
+    vec hyper_par;
+    vec hyper_optimal;
+
+    vec increment;
+    uvec ind_increment;
+
+    mat hyperoptimizationHistory;
+
+    unsigned int numberOfIteration;
+    int dim;
+
+    vec likelihood_cur;
+    double likelihood_optimal;*/
 
 public:
 
 	bool ifInitialized = false;
 	bool ifDataIsRead = false;
 	bool ifNormalized = false;
-
-
 	bool ifHasTestData = false;
-
+	bool ifDataIsAssigned = false;  // for vector output
 
 	mat testResults;
 
@@ -95,8 +117,17 @@ public:
 
 	void readDataTest(void);
 	void normalizeDataTest(void);
-
 	virtual void readData(void);
+
+	void assignOutput(int ID);
+	int readRank(void) const;
+	double readOutputMean(void) const;
+	double readOutputStd(void) const;
+	rowvec readOutputMeanVector(void) const;
+	rowvec readOutputStdVector(void) const;
+
+	mat getPodBasis(void) const;
+
 	virtual void normalizeData(void);
 
 	void checkRawData(void) const;
@@ -110,6 +141,12 @@ public:
 	void setGradientsOn(void);
 	void setGradientsOff(void);
 	bool areGradientsOn(void) const;
+
+	void setVectorConstraintOn(void);
+	void setVectorConstraintOff(void);
+	bool areVectorConstraint(void) const;
+
+	void setConstraintLength(int length);
 
 	virtual void setDisplayOn(void);
 	virtual void setDisplayOff(void);
@@ -135,12 +172,18 @@ public:
 	virtual void loadHyperParameters(void) = 0;
 	virtual void updateAuxilliaryFields(void);
 	virtual void train(void) = 0;
-	virtual double interpolate(rowvec x) const = 0;
-	//virtual mat interpolate(void) const = 0;  // Modified by Kai
-	virtual void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const = 0;
-	virtual void calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const = 0;
-	virtual void addNewSampleToData(rowvec newsample) = 0;
 
+	virtual double interpolate(rowvec x) const = 0;
+	virtual vec interpolate_vec(rowvec x) const = 0;
+
+	//virtual mat interpolate(void) const = 0;  // Modified by Kai
+
+	virtual void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const = 0;
+	virtual void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const = 0;
+
+	virtual void calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const = 0;
+
+	virtual void addNewSampleToData(rowvec newsample) = 0;
 
 	void tryOnTestData(void) const;
 
@@ -153,10 +196,19 @@ public:
 	rowvec getRowX(unsigned int index) const;
 	rowvec getRowXRaw(unsigned int index) const;
 
-
 	void visualizeTestResults(void) const;
 
+	/* Hooke Jeeves algorithm  // Created by Kai
 
+	void boxmin(vec hyper_lb, vec hyper_ub, int num);
+	void start(vec int_hyper, vec hyper_lb, vec hyper_ub, int num);
+	void explore(vec int_hyper, double likelihood, int num);
+	void move(vec hyper_1, vec hyper_2, double likelihood, int num);
+
+	mat getTheta(void) const;
+	vec getLikelihood(void) const;
+	vec getOptimalTheta(void) const;
+	double getOptimalLikelihood(void) const;*/
 
 };
 

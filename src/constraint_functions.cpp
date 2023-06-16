@@ -66,7 +66,7 @@ ConstraintDefinition::ConstraintDefinition(std::string nameInput, std::string in
 
 }
 
-ConstraintDefinition::ConstraintDefinition(std::string definition){
+ConstraintDefinition::ConstraintDefinition(std::string definition){   // Read constraint type
 
 	assert(!definition.empty());
 	size_t found  = definition.find(">");
@@ -87,6 +87,7 @@ ConstraintDefinition::ConstraintDefinition(std::string definition){
 		std::cout<<"ERROR: Something is wrong with the constraint definition!\n";
 		abort();
 	}
+
 	nameBuf.assign(definition,0,place);
 	nameBuf = removeSpacesFromString(nameBuf);
 
@@ -108,7 +109,8 @@ void ConstraintDefinition::print(void) const{
 	std::cout<<"ID = "<<ID<<"\n";
 	std::cout<<name<<" "<<inequalityType<<" "<<value<<"\n";
 	std::cout<< "Design vector filename = "<<designVectorFilename<<"\n";
-	std::cout<< "Output filename = "<<outputFilename<<"\n";
+	std::cout<< "Output value filename = "<<outputValueFilename<<"\n";
+	std::cout<< "Output gradient filename = "<<outputGradFilename<<"\n";
 	std::cout<< "Executable name = "<<executableName<<"\n";
 	std::cout<< "Surrogate model type  = "<<surrogatetype<<"\n";  // Created by Kai
 
@@ -125,8 +127,6 @@ void ConstraintDefinition::print(void) const{
 ConstraintFunction::ConstraintFunction(std::string name, unsigned int dimension)
 : ObjectiveFunction(name, dimension){
 
-
-
 }
 
 
@@ -137,7 +137,6 @@ void ConstraintFunction::readEvaluateOutput(Design &d) {
 #endif
 
 	assert(d.dimension == dim);
-
 
 	if(ifAdjointMarkerIsSet == true){
 
@@ -167,8 +166,15 @@ void ConstraintFunction::readEvaluateOutput(Design &d) {
 
 	}
 
+	 readOutputWithoutMarkers(d);
 
-	/* input from file without using markers */
+    if (ifVectorOutput){
+    	constraint_length = d.constraint_length[getVectorConstraintID()];
+    }
+
+
+
+	/*  // input from file without using markers
 
 	if(checkIfMarkersAreNotSet()){
 
@@ -176,12 +182,13 @@ void ConstraintFunction::readEvaluateOutput(Design &d) {
 
 	}
 
-	/* input from file using markers (the values are separated with ',')*/
+	// input from file using markers (the values are separated with ',')
 	else{
 
 		readOutputWithMarkers(d);
 
-	}
+	}*/
+
 
 #if 0
 	d.print();
@@ -191,50 +198,105 @@ void ConstraintFunction::readEvaluateOutput(Design &d) {
 
 void ConstraintFunction::readOutputWithoutMarkers(Design &outputDesignBuffer) const{
 
-	assert(isNotEmpty(fileNameInputRead));
-	std::ifstream inputFileStream(fileNameInputRead, ios::in);
+	assert(isNotEmpty(fileNameOutputValueRead));
 
-	if (!inputFileStream.is_open()) {
+	if (!ifVectorOutput){
 
-		cout << "ERROR: There was a problem opening the input file!\n";
-		abort();
+	    std::ifstream inputFileStream(fileNameOutputValueRead, ios::in);
+
+	    if (!inputFileStream.is_open()) {
+
+		   cout << "ERROR: There was a problem opening the input file!\n";
+		   abort();
+	    }
+
+	    double functionValue;
+
+	    inputFileStream >> functionValue;
+	    outputDesignBuffer.constraintTrueValues(ID) = functionValue;  // ID is the constraint function ID
+	    inputFileStream.close();
+
+	   // cout << "constraint value is " << outputDesignBuffer.constraintTrueValues(ID)<< endl;
 	}
 
+	else {
 
-	rowvec constraintGradient = zeros<rowvec>(dim);
+		 std::ifstream inputFileStream(fileNameOutputValueRead, ios::in);
 
-	double functionValue;
-	inputFileStream >> functionValue;
+	     if (!inputFileStream.is_open()) {
+		    cout << "ERROR: There was a problem opening the input file!\n";
+			abort();
+		  }
 
+	     std::string line;
+	     std::vector<double> constraint_vec;                        // constraint is a vector
 
-	outputDesignBuffer.constraintTrueValues(ID) = functionValue;
+	      while(std::getline(inputFileStream, line)){
+	    	  double id = static_cast<double>(std::stod(line) );    // line by line
+	    	  constraint_vec.push_back(id);
+	      }
+	     inputFileStream.close();
 
+	     outputDesignBuffer.constraint_vector.push_back(constraint_vec);
+	     outputDesignBuffer.constraint_length.push_back(constraint_vec.size());
 
-	if(ifGradientAvailable){
+	     // setConstraintLength(constraint_vec.size());
 
+	     //constraint_length = constraint_vec.size();
 
-		for(unsigned int i=0; i<dim; i++){
+	     if (getInequalityType()==">"){
+	    	 outputDesignBuffer.constraintExtremumValues.push_back(min(outputDesignBuffer.constraint_vector[getVectorConstraintID()]));
+	     }
 
-			inputFileStream >> constraintGradient(i);
+	     if (getInequalityType()=="<"){
+	    	 outputDesignBuffer.constraintExtremumValues.push_back(max(outputDesignBuffer.constraint_vector[getVectorConstraintID()]));
+	      }
+
+	       outputDesignBuffer.constraintTrueValues(ID) = outputDesignBuffer.constraintExtremumValues[getVectorConstraintID()];  // ID is the constraint function ID
 
 		}
 
+	// constraint gradient
+
+	if(ifGradientAvailable){
+
+		std::string line;
+		std::vector<double> obj_grad;
+		rowvec constraintGradient = zeros<rowvec>(dim);
+
+		assert(isNotEmpty(fileNameOutputGradRead));
+
+		std::ifstream inputFileStream1(fileNameOutputGradRead, ios::in);
+
+	    if (!inputFileStream1.is_open()) {
+			 cout << "ERROR: There was a problem opening the input file!\n";
+			 abort();
+		}
+
+		 while(std::getline(inputFileStream1, line)){
+			  double id = static_cast<double>(std::stod(line) );  // line by line
+			  obj_grad.push_back(id);
+		 }
+		inputFileStream1.close();
+
+		 for (unsigned int i=0; i< dim; i++){
+			 constraintGradient(i) = obj_grad[i];
+		 }
+
 		abortIfHasNan(constraintGradient);
-
+		outputDesignBuffer.constraintGradients.push_back(constraintGradient);
 	}
-
-
-	outputDesignBuffer.constraintGradients.push_back(constraintGradient);
-	inputFileStream.close();
-
 
 }
 
 
 void ConstraintFunction::readOutputWithMarkers(Design &outputDesignBuffer) const{
 
-	assert(isNotEmpty(fileNameInputRead));
-	std::ifstream inputFileStream(fileNameInputRead, ios::in);
+
+	assert(isNotEmpty(fileNameOutputValueRead));
+	assert(isNotEmpty(fileNameOutputGradRead));
+
+	std::ifstream inputFileStream(fileNameOutputValueRead, ios::in);
 
 	if (!inputFileStream.is_open()) {
 
@@ -243,19 +305,26 @@ void ConstraintFunction::readOutputWithMarkers(Design &outputDesignBuffer) const
 	}
 
 
-	rowvec constraintGradient = zeros<rowvec>(dim);
+	//if (if_vector_constraint){
+
+	//	mat constraintGradient = mat();  }    //  kai
+
+	//else{
+      rowvec constraintGradient = zeros<rowvec>(dim);
+    // }
 
 
 	bool markerFound = false;
 	bool markerAdjointFound = false;
 
-	for( std::string line; getline( inputFileStream, line ); ){ /* check each line */
+	for( std::string line; getline( inputFileStream, line ); ){     /* check each line */
 
 		size_t foundMarkerPosition = isMarkerFound(readMarker, line);
 
 		if (foundMarkerPosition != std::string::npos){
 
-			outputDesignBuffer.constraintTrueValues(ID) = getMarkerValue(line, foundMarkerPosition );
+			 outputDesignBuffer.constraintTrueValues(ID) = getMarkerValue(line, foundMarkerPosition );
+
 			markerFound = true;
 
 		}
@@ -265,6 +334,8 @@ void ConstraintFunction::readOutputWithMarkers(Design &outputDesignBuffer) const
 
 			/* check for constraint gradient marker */
 			size_t foundMarkerPosition = isMarkerFound(readMarkerAdjoint, line);
+
+			cout << "position of gradient is " << foundMarkerPosition << endl;
 
 			if (foundMarkerPosition != std::string::npos){
 
@@ -312,7 +383,8 @@ void ConstraintFunction::print(void) const {
 	std::cout << "Executable name: " << executableName << "\n";
 	std::cout << "Executable path: " << executablePath << "\n";
 	std::cout << "Input file name: " << fileNameDesignVector << "\n";
-	std::cout << "Output file name: " << fileNameInputRead << "\n";
+	std::cout << "Output file name: " << fileNameOutputValueRead << "\n";
+	std::cout << "Output file name: " << fileNameOutputGradRead << "\n";
 	std::cout << "Read marker: " <<readMarker <<"\n";
 	if(ifGradientAvailable){
 		std::cout<<"Uses gradient vector: Yes\n";
@@ -353,15 +425,15 @@ void ConstraintFunction::setParametersByDefinition(ConstraintDefinition inequali
 
 	executableName = inequalityConstraint.executableName;
 	executablePath = inequalityConstraint.path;
+
+	jsonFile = inequalityConstraint.jsonFile;   // for induheat project
+
 	fileNameDesignVector = inequalityConstraint.designVectorFilename;
-	fileNameInputRead = inequalityConstraint.outputFilename;
+	fileNameOutputValueRead = inequalityConstraint.outputValueFilename;
+	fileNameOutputGradRead = inequalityConstraint. outputGradFilename;
 	inequalityType = inequalityConstraint.inequalityType;
 	name =  inequalityConstraint.name;
-
 	value = inequalityConstraint.value;
-
-
-
 
 	if(isNotEmpty(inequalityConstraint.marker)){
 
@@ -403,6 +475,11 @@ std::string ConstraintFunction::getInequalityType(void) const{
 
 }
 
+/*bool ConstraintFunction::checkIfVectorConstraint(void) const{   // Kai
+
+		return if_vector_constraint ;
+
+}*/
 
 bool ConstraintFunction::checkFeasibility(double valueIn) const{
 
@@ -450,6 +527,8 @@ void ConstraintFunction::evaluate(Design &d) {
 
 	else if (executableName != "None" && fileNameDesignVector != "None") {
 
+	//	cout << "ifRunNecessary " << ifRunNecessary << endl;
+
 		if (ifRunNecessary) {
 
 			std::string runCommand = getExecutionCommand();
@@ -488,14 +567,19 @@ void ConstraintFunction::addDesignToData(Design &d){
 	}
 	else{
 
-		rowvec newsample = d.constructSampleConstraint(ID);
+		if (ifVectorOutput){
 
-		//surrogateModel.addNewSampleToData(newsample);
+			rowvec newsample = d.constructSampleConstraintVector(getVectorConstraintID());
 
-		surrogate->addNewSampleToData(newsample);
+			surrogate->addNewSampleToData(newsample);
+
+		}else {
+
+			rowvec newsample = d.constructSampleConstraint(ID);
+			surrogate->addNewSampleToData(newsample);
+
+		}
 	}
-
-
 }
 
 

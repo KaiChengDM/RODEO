@@ -34,8 +34,8 @@
 #include "surrogate_model_data.hpp"
 #include "auxiliary_functions.hpp"
 #include "surrogate_model.hpp"
-
-
+#include <armadillo>
+using namespace arma;
 
 SurrogateModelData::SurrogateModelData(){
 
@@ -92,26 +92,45 @@ void SurrogateModelData::setDisplayOff(void){
 }
 
 void SurrogateModelData::setGradientsOn(void){
-
 	ifDataHasGradients = true;
-
 }
+
 
 void SurrogateModelData::setGradientsOff(void){
-
 	ifDataHasGradients = false;
+}
+
+void SurrogateModelData::setVectorOutputOn(void){
+
+	ifVectorOutput = true;
 
 }
 
+void SurrogateModelData::setVectorOutputOff(void){
 
+	ifVectorOutput = false;
+
+}
+
+void SurrogateModelData::setConstraintLength(int length){
+
+	constraintLength = length;
+}
+
+
+int SurrogateModelData::getConstraintLength(void) const {
+
+	return constraintLength;
+
+}
 
 void SurrogateModelData::readData(string inputFilename){
 
 	assert(isNotEmpty(inputFilename));
 
-	// cout << inputFilename << " name"<< endl;
-
 	outputToScreen.printMessage("Loading data from the file: " + inputFilename);
+
+	cout << "Loading data from the file: " << inputFilename << endl;
 
 	bool status = rawData.load(inputFilename.c_str(), csv_ascii);
 
@@ -128,16 +147,22 @@ void SurrogateModelData::readData(string inputFilename){
 
 	numberOfSamples = rawData.n_rows;
 	outputToScreen.printMessage("Number of samples = ", numberOfSamples);
-	outputToScreen.printMessage("Raw data = ", rawData);
-
-
+	//outputToScreen.printMessage("Raw data = ", rawData);
 
 	assignDimensionFromData();
 
 	assignSampleInputMatrix();
-	assignSampleOutputVector();
-	assignGradientMatrix();
 
+	if (ifVectorOutput){
+
+		assignSampleOutputMatrix();
+
+	}
+	else{
+		assignSampleOutputVector();
+	}
+
+	assignGradientMatrix();
 
 }
 
@@ -163,9 +188,17 @@ void SurrogateModelData::readDataTest(string inputFilename){
 	numberOfTestSamples = XrawTest.n_rows;
 	outputToScreen.printMessage("Number of test samples = ", numberOfTestSamples);
 
-
 	XTest = XrawTest.cols(0,dimension-1);
-	YTest = XrawTest.col(dimension);
+
+	if (ifVectorOutput){
+		Y_vectTest.zeros(numberOfTestSamples,dimension+constraintLength-1);
+		Y_vectTest =  XrawTest.cols(dimension,dimension+constraintLength-1);
+
+	}else {
+
+		YTest = XrawTest.col(dimension);
+
+	}
 }
 
 
@@ -175,6 +208,10 @@ void SurrogateModelData::assignDimensionFromData(void){
 
 	unsigned int dimensionOfTrainingData;
 
+    // if()
+	// cout << "if gradient " << ifDataHasGradients << endl;
+	// cout << "if vector constraint " << ifVectorOutput << endl;
+
 	if(ifDataHasGradients){
 
 		dimensionOfTrainingData = (rawData.n_cols-1)/2;
@@ -182,7 +219,15 @@ void SurrogateModelData::assignDimensionFromData(void){
 
 	else{
 
-		dimensionOfTrainingData =  rawData.n_cols-1;
+		if (ifVectorOutput){
+
+			dimensionOfTrainingData =  rawData.n_cols-constraintLength;
+
+        }else{
+
+        	dimensionOfTrainingData =  rawData.n_cols-1;
+
+        }
 	}
 
 
@@ -216,6 +261,78 @@ void SurrogateModelData::assignSampleOutputVector(void){
 	y = rawData.col(dimension);
 
 }
+
+void SurrogateModelData::assignSampleOutputMatrix(void){
+
+	assert(dimension>0);
+	assert(numberOfSamples>0);
+
+	mat Y = rawData.submat(0,dimension,numberOfSamples-1, dimension+constraintLength-1);
+
+	y_vec = Y.t();
+}
+
+void SurrogateModelData::assignOutput(int ID){
+
+	y = pod_basiscoefficient.col(ID);
+
+}
+
+int SurrogateModelData::getRank(void) const{
+
+	return rank;
+}
+
+void SurrogateModelData::pod_ROM(void){
+
+	mat U;  vec s;  mat V;
+
+	svd_econ(U, s, V, y_vec);
+
+	eigenvalue = s%s;
+
+	for (unsigned int i=0; i<numberOfSamples; i++){
+
+	   double ratio = sum(eigenvalue.subvec(0,i))/sum(eigenvalue);
+
+
+        if (ratio > threshold){
+        	rank = i+1;
+        	break;
+        }
+
+	 }
+
+	pod_basis = U.cols(0,rank-1);
+
+    pod_basiscoefficient = y_vec.t()*pod_basis;
+
+    mean_basiscoefficient = mean(pod_basiscoefficient,0);
+
+    std_basiscoefficient  = stddev(pod_basiscoefficient,0,0);
+
+
+    for (unsigned int i=0; i < rank; i++){
+
+    	  if (std_basiscoefficient(i) != 0) {
+
+    	    pod_basiscoefficient.col(i) = (pod_basiscoefficient.col(i) - mean_basiscoefficient(i))/std_basiscoefficient(i);  // normalize the POD coefficient
+
+    	  }
+    	  else{
+
+    	    pod_basiscoefficient.col(i) = pod_basiscoefficient.col(i) - mean_basiscoefficient(i);  // normalize the POD coefficient
+
+    	   }
+    }
+
+  //   cout << "mean_basiscoefficient " << mean_basiscoefficient << endl;
+  //   cout << " std_basiscoefficient " << std_basiscoefficient << endl;
+
+	cout << "The proper orthogonal decomposition mode number is " << rank << endl;
+
+}
+
 
 void SurrogateModelData::assignGradientMatrix(void){
 
@@ -272,6 +389,12 @@ vec SurrogateModelData::getYTest(void) const{   // Modified by Kai
 
 }
 
+mat SurrogateModelData::getY_VectorTest(void) const{   // Modified by Kai
+
+	return Y_vectTest;
+
+}
+
 
 rowvec SurrogateModelData::getRowXRaw(unsigned int index) const{
 
@@ -291,6 +414,44 @@ rowvec SurrogateModelData::getRowXRawTest(unsigned int index) const{
 vec SurrogateModelData::getOutputVector(void) const{
 
 	return y;
+
+}
+
+double SurrogateModelData::getOutputMean(void) const{
+
+	return mean_y;
+
+}
+
+double SurrogateModelData::getOutputStd(void) const{
+
+	return std_y;
+
+}
+
+rowvec SurrogateModelData::getOutputMeanVector(void) const{
+
+	// return mean_y_vec;
+	return mean_basiscoefficient;
+
+}
+
+rowvec SurrogateModelData::getOutputStdVector(void) const{
+
+	//return std_y_vec;
+	return std_basiscoefficient;
+}
+
+
+mat SurrogateModelData::getPodBasis(void) const{
+
+	return  pod_basis;
+
+}
+
+mat SurrogateModelData::getPodBasisCoefficients(void) const{
+
+	return pod_basiscoefficient;
 
 }
 
@@ -339,15 +500,63 @@ void SurrogateModelData::normalizeSampleInputMatrix(void){
 
 			XNormalized(i,j) = (X(i,j) - xmin(j))/deltax(j);
 
-
 		}
 
 	}
 
 	X = (1.0/dimension)*XNormalized;
-	//X = XNormalized; // Modified by Kai
 	ifDataIsNormalized = true;
+}
 
+void SurrogateModelData::normalizeSampleOutput(void){
+
+	assert(X.n_rows ==  numberOfSamples);
+	assert(X.n_cols ==  dimension);
+
+	assert(boxConstraints.getDimension() == dimension);
+
+	assert(boxConstraints.areBoundsSet());
+
+	// mean_y_vec.zeros(constraintLength); std_y_vec.ones(constraintLength);
+
+	if (ifVectorOutput){
+
+		/*mean_y_vec = mean(y_vec,1); std_y_vec = stddev(y_vec,0,1);
+
+		for (unsigned int i=0; i<  mean_y_vec.size(); i++){
+
+			if (std_y_vec(i)!=0) {
+
+				y_vec.row(i) = (y_vec.row(i) -  mean_y_vec (i))/std_y_vec(i);
+
+			} else{
+
+			    y_vec.row(i) = y_vec.row(i) -  mean_y_vec (i);
+
+			}
+
+		}*/
+
+		pod_ROM();  // proper orthogonal decomposition based reduced order model
+
+	}else {
+
+		mean_y = mean(y);  std_y = stddev(y);
+
+	    if (std_y == 0){
+
+	    	printf("ERROR: The output samples are the same!\n");
+	    	abort();
+
+	    }else {
+
+	    	y =  (y -mean_y) / std_y;
+
+	    }
+
+	}
+
+	ifOutputIsNormalized = true;
 
 }
 
@@ -355,7 +564,6 @@ void SurrogateModelData::normalizeSampleInputMatrix(void){
 void SurrogateModelData::normalizeSampleInputMatrixTest(void){
 
 	assert(boxConstraints.areBoundsSet());
-
 
 	outputToScreen.printMessage("Normalizing and scaling the sample input matrix for test...");
 
@@ -381,7 +589,30 @@ void SurrogateModelData::normalizeSampleInputMatrixTest(void){
 
 }
 
+/*void SurrogateModelData::normalizeSampleOutputTest(void){
 
+	assert(X.n_rows ==  numberOfSamples);
+	assert(X.n_cols ==  dimension);
+
+	assert(boxConstraints.getDimension() == dimension);
+
+	assert(boxConstraints.areBoundsSet());
+
+	// mean_y_vec.zeros(constraintLength); std_y_vec.ones(constraintLength);
+
+	if (ifVectorOutput){
+
+		pod_ROM();  // proper orthogonal decomposition based reduced order model
+
+	}else {
+
+		mean_y = mean(y);  std_y = stddev(y);
+        y =  (y -mean_y) / std_y;
+	}
+
+	ifOutputIsNormalized = true;
+
+}*/
 
 
 void SurrogateModelData::setBoxConstraints(Bounds boxConstraintsInput){
@@ -433,6 +664,12 @@ Bounds SurrogateModelData::getBoxConstraints(void) const{
 bool SurrogateModelData::isDataNormalized(void) const{
 
 	return ifDataIsNormalized;
+
+}
+
+bool SurrogateModelData::isVectorOutput(void) const{
+
+	return ifVectorOutput;
 
 }
 

@@ -49,9 +49,12 @@ private:
 	unsigned int numberOfSamples = 0;
 	unsigned int numberOfTestSamples = 0;
 	unsigned int dimension = 0;
+	unsigned int constraintLength = 0;
 
 	bool ifDataHasGradients = false;
 	bool ifDataIsNormalized = false;
+	bool ifVectorOutput = false;   // for vector output
+	bool ifOutputIsNormalized= false;
 
 	mat rawData;
 	mat X;
@@ -60,11 +63,26 @@ private:
 	mat gradient;
 
 	vec y;
+    mat y_vec;                     // for vector output
 
+    double mean_y = 0;
+	double std_y = 1;
+
+	rowvec mean_basiscoefficient;
+	rowvec std_basiscoefficient;
+
+    mat pod_basis;
+    mat pod_basiscoefficient;
+    vec eigenvalue;
+
+    double threshold =  0.99999;
+    int rank;
 
 	mat XrawTest;
 	mat XTest;
+
     vec YTest;
+    mat Y_vectTest;               // for vector outputY
 
 	OutputDevice outputToScreen;
 	Bounds boxConstraints;
@@ -77,23 +95,44 @@ public:
 
 	void setDisplayOn(void);
 	void setDisplayOff(void);
+
 	void setGradientsOn(void);
 	void setGradientsOff(void);
+
+	void setVectorOutputOn(void);   // created by kai
+	void setVectorOutputOff(void);  // created by kai
+
+	void setConstraintLength(int length);   // created by kai
+	int  getConstraintLength(void) const;    // created by kai
+
 	void setBoxConstraints(Bounds);
 	void setBoxConstraintsFromData(void);
+
+	void pod_ROM(void);
+	void assignOutput(int ID);
+	int getRank(void) const;
+
 	Bounds getBoxConstraints(void) const;
 
 
 	void assignDimensionFromData(void);
 	void assignSampleInputMatrix(void);
+
 	void assignSampleOutputVector(void);
+	void assignSampleOutputMatrix(void);
+
 	void assignGradientMatrix(void);
 
 	void normalizeSampleInputMatrix(void);
+	void normalizeSampleOutput(void);
+
 	void normalizeSampleInputMatrixTest(void);
+	// void normalizeSampleOutputTest(void);
+
 
 	bool isDataNormalized(void) const;
 
+	bool isVectorOutput(void) const;
 
 	unsigned int getNumberOfSamples(void) const;
 	unsigned int getNumberOfSamplesTest(void) const;
@@ -108,6 +147,8 @@ public:
 	rowvec getRowRawData(unsigned int index) const;
 	rowvec getRowGradient(unsigned int index) const;
 	vec getYTest(void) const;
+	mat getY_VectorTest(void) const;
+
 
 	mat getInputMatrix(void) const;
 
@@ -115,6 +156,16 @@ public:
 	rowvec getRowXRawTest(unsigned int index) const;
 
 	vec getOutputVector(void) const;
+
+	double getOutputMean(void) const;
+	double getOutputStd(void) const;
+
+	rowvec getOutputMeanVector(void) const;
+	rowvec getOutputStdVector(void) const;
+
+	mat getPodBasis(void) const;
+	mat getPodBasisCoefficients(void) const;
+
 	double getMinimumOutputVector(void) const;
 
 	mat getGradientMatrix(void) const;

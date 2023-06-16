@@ -39,10 +39,18 @@ using namespace arma;
 class CDesignExpectedImprovement{
 
 public:
+
 	rowvec dv;
 	double valueExpectedImprovement;
 	double objectiveFunctionValue;
 	rowvec constraintValues;
+
+	std::vector<rowvec> constraint_vector;           // for vector constraint
+	std::vector<double> constraintExtremumValues;    // extremum of vector constraint
+	std::vector<long> constraint_length;             // for vector constraint
+
+	rowvec probability_con;                           // Probability of satisfying the constraint
+
 	unsigned int dim;
 
 
@@ -82,13 +90,10 @@ public:
 
 	}
 
-
 	void generateRandomDesignVector(void);
 	void generateRandomDesignVector(vec lb, vec ub);
 
 	void generateRandomDesignVectorAroundASample(const rowvec &sample, vec lb, vec ub);
-
-
 
 
 	void gradientUpdateDesignVector(rowvec gradient, double stepSize){
@@ -136,11 +141,16 @@ public:
 	unsigned int numberOfConstraints = 0;
 	rowvec designParameters;
 	rowvec constraintTrueValues;
+	std::vector<rowvec> constraint_vector;           // for vector constraint
+	std::vector<double> constraintExtremumValues;    // extremum of vector constraint
+	std::vector<long> constraint_length;             // for vector constraint
+	//mat constraintMatrix;
 	rowvec gradient;
 	double trueValue = 0;
 	double objectiveFunctionValue = 0.0;
 	double improvementValue = 0.0;
 	std::vector<rowvec> constraintGradients;
+	std::vector<mat> constraintGradientMatrices;      // for vector constraint
 	unsigned int ID = 0;
 	std::string tag;
 
@@ -163,6 +173,7 @@ public:
 	rowvec constructSampleObjectiveFunctionWithGradient(void) const;
 
 	rowvec constructSampleConstraint(unsigned int constraintID) const;
+	rowvec constructSampleConstraintVector(unsigned int constraintID) const;  // for vector output
 	rowvec constructSampleConstraintWithGradient(unsigned int constraintID) const;
 
 };

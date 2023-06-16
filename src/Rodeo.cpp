@@ -30,11 +30,8 @@
  *
  */
 
-
-
 #include<stdio.h>
 #include<iostream>
-
 #include "optimization.hpp"
 #include "test_functions.hpp"
 #include "linear_regression.hpp"
@@ -43,7 +40,6 @@
 #include "auxiliary_functions.hpp"
 #include "read_settings.hpp"
 #include "surrogate_model.hpp"
-
 #include "aggregation_model.hpp"
 #include "kriging_training.hpp"
 #include "polynomials.hpp"
@@ -54,9 +50,8 @@
 #ifdef UNIT_TESTS
 #include<gtest/gtest.h>
 #endif
+
 Rodeo_settings settings;
-
-
 
 
 int main(int argc, char* argv[]){
@@ -75,12 +70,8 @@ int main(int argc, char* argv[]){
 	printf("    RObust DEsign Optimization Package      ");
 	printf("\n\n\n");
 
-
-
-
 	/* initialize random seed*/
 	srand (time(NULL));
-
 
 	changeDirectoryToRodeoHome();
 
@@ -103,13 +94,11 @@ int main(int argc, char* argv[]){
 
 	changeDirectoryToWork(settings.cwd);
 
-
 	RoDeODriver driverToRun;
+
 	driverToRun.readConfigFile();
 
 	driverToRun.runDriver();
-
-
 
 
 }

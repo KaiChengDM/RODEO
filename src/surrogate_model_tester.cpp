@@ -55,6 +55,12 @@ void SurrogateModelTester::setDimension(unsigned int value){
 
 }
 
+void SurrogateModelTester::setOutputVectorDimension(unsigned int value){
+
+	output_dimension = value;
+	ifVectorOutput = true;
+}
+
 
 void SurrogateModelTester::setName(string nameInput){
 
@@ -132,13 +138,10 @@ void SurrogateModelTester::setSurrogateModel(SURROGATE_MODEL modelType){
 	surrogateModel->setNameOfInputFile(fileNameTraingData);
 
 	assert(isNotEmpty(fileNameTestData));
+
 	surrogateModel->setNameOfInputFileTest(fileNameTestData);
 
-
-
 	surrogateModel->setNameOfHyperParametersFile(name);
-
-
 
 	ifSurrogateModelSpecified = true;
 }
@@ -170,11 +173,16 @@ void SurrogateModelTester::performSurrogateModelTest(void){
 
 	outputToScreen.printMessage("Performing surrogate model test...");
 
+	if (ifVectorOutput){
+
+		surrogateModel->setConstraintLength(output_dimension);
+
+		surrogateModel->setVectorConstraintOn();
+	}
 
 	surrogateModel->readData();
+
 	surrogateModel->readDataTest();
-
-
 
 	if(boxConstraints.areBoundsSet()){
 
@@ -187,17 +195,14 @@ void SurrogateModelTester::performSurrogateModelTest(void){
 
 	}
 
-
 	surrogateModel->normalizeData();
 
 	surrogateModel->normalizeDataTest();
 
-
 	surrogateModel->initializeSurrogateModel();
 
-
-
 	surrogateModel->setNumberOfTrainingIterations(numberOfTrainingIterations);
+
 	surrogateModel->train();
 
 	surrogateModel->tryOnTestData();

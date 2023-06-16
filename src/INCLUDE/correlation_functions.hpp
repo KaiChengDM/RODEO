@@ -50,17 +50,17 @@ public:
 
 	Correlationfunction();
 
-	void corrgaussian_gekriging(mat &X, vec theta);
+	mat corrgaussian_gekriging(mat &X, vec theta);
 	mat corrbiquadspline_gekriging(mat &X,vec theta);
 
-	void corrgaussian_gekriging_vec(mat &xtest, mat &X, vec theta);
-	void corrbiquadspline_gekriging_vec(mat &xtest,mat &X, vec theta);
+	mat corrgaussian_gekriging_vec(mat &xtest, mat &X, vec theta);
+	mat corrbiquadspline_gekriging_vec(mat &xtest,mat &X, vec theta);
 
-	void corrgaussian_kriging(mat &X,vec theta);
-	void corrbiquadspline_kriging(mat &X,vec theta);
+	mat corrgaussian_kriging(mat &X,vec theta);
+	mat corrbiquadspline_kriging(mat &X,vec theta);
 
-	void corrgaussian_kriging_vec(mat &xtest,mat &X,vec theta);
-	void corrbiquadspline_kriging_vec(mat &xtest,mat &X,vec theta);
+	mat corrgaussian_kriging_vec(mat &xtest,mat &X,vec theta);
+	mat corrbiquadspline_kriging_vec(mat &xtest,mat &X,vec theta);
 };
 
 

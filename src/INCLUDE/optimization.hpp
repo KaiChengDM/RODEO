@@ -39,11 +39,11 @@
 #include "constraint_functions.hpp"
 #include "random_functions.hpp"
 
-
-
 class Optimizer {
 
-private:
+ private:
+
+//protected:
 
 	vec lowerBounds;
 	vec upperBounds;
@@ -58,8 +58,8 @@ private:
 
 	mat optimizationHistory;
 
-
 	std::vector<ConstraintFunction> constraintFunctions;
+
 	ObjectiveFunction objFun;
 
 	std::vector<CDesignExpectedImprovement> theMostPromisingDesigns;
@@ -70,6 +70,8 @@ private:
 
 	bool IfinitialValueForObjFunIsSet= false;
 
+	char* workpath;
+
 	Design globalOptimalDesign;
 
 	double initialobjectiveFunctionValue = 0.0;
@@ -78,14 +80,34 @@ private:
 
 	unsigned int iterMaxEILoop;
 
+	// hooke jeeves algorithm
 
+	 int num =1 ;
 
+	 vec dv_lb;
+	 vec dv_ub;
+	 vec dv_in;
+
+	 mat dv_cur;
+	 vec dv_par;
+	 vec dv_optimal;
+
+	 vec  increment;
+	 uvec ind_increment;
+
+	 mat hyperoptimizationHistory;
+
+	 unsigned int numberOfIteration;
+
+	 vec obj_cur;
+	 double obj_optimal;
+	 double obj;
 
 public:
 
 	std::string name;
 
-	unsigned int dimension = 0;
+    unsigned int dimension = 0;
 	unsigned int numberOfConstraints = 0;
 	unsigned int maxNumberOfSamples = 0;
 	unsigned int howOftenTrainModels = 10; /* train surrogates in every 10 iteration */
@@ -99,11 +121,12 @@ public:
 
 	bool ifVisualize = false;
 	bool ifDisplay = false;
-
 	bool ifBoxConstraintsSet = false;
 
+	Optimizer();
 
 	Optimizer(std::string ,int, std::string = "minimize");
+
 	bool checkSettings(void) const;
 	void print(void) const;
 	void printConstraints(void) const;
@@ -163,10 +186,16 @@ public:
 
 	void addConstraintValuesToData(Design &d);
 
+	double Evaluate (vec dv);          // compute the constrained EI function
 
 	rowvec calculateEIGradient(CDesignExpectedImprovement &) const;
+
 	CDesignExpectedImprovement MaximizeEIGradientBased(CDesignExpectedImprovement ) const;
+
+    CDesignExpectedImprovement local_search(CDesignExpectedImprovement &);  // use hooke-jeeves algorithm for local search
+
 	void findTheMostPromisingDesign(unsigned int howManyDesigns = 1);
+
 	CDesignExpectedImprovement getDesignWithMaxExpectedImprovement(void) const;
 
 	rowvec generateRandomRowVectorAroundASample(void);
@@ -177,8 +206,19 @@ public:
 	void displayMessage(std::string) const;
 
 
-};
+   // hooke jeeves algorithm
 
+	void boxmin(mat dv, vec dv_lb, vec dv_ub);
+	void start(vec dv_in, vec dv_lb, vec dv_ub, int num);
+	void explore(vec dv_in, double obj, int num);
+	void move(vec dv_1, vec dv_2, double obj, int num);
+
+	mat get_dv(void) ;
+    vec get_obj(void) ;
+	vec getOptimal_dv(void) ;
+	double getOptimal_obj(void);
+
+};
 
 
 #endif

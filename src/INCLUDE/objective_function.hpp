@@ -51,11 +51,13 @@ public:
 
 	std::string executableName;
 	std::string path;
-	std::string outputFilename;
+	std::string outputValueFilename;
+	std::string outputGradFilename;
+
 	std::string marker;
 	std::string markerForGradient;
-	std::string surrogatetype;  // Modified by Kai
-
+	std::string surrogatetype;
+	std::string jsonFile;
 
 	/* These are required only for multi-level option */
 	std::string executableNameLowFi;
@@ -70,6 +72,8 @@ public:
 	bool ifGradient = false;
 	bool ifGradientLowFi = false;
 	bool ifDefined = false;
+	bool ifVectorOutput = false;    // for vector output
+
 
 	ObjectiveFunctionDefinition(std::string);
 	ObjectiveFunctionDefinition();
@@ -88,6 +92,7 @@ private:
 
 protected:
 
+	std::string inequalityType;
 
 	double (*objectiveFunPtr)(double *);
 	double (*objectiveFunAdjPtr)(double *,double *);
@@ -95,10 +100,13 @@ protected:
 	std::string name;
 	std::string fileNameDesignVector;
 
-
 	std::string executableName;
 	std::string executablePath;
-	std::string fileNameInputRead;
+	std::string jsonFile;
+
+	std::string fileNameOutputValueRead;  // file name for reading function value
+	std::string fileNameOutputGradRead;   // file name for reading function value
+
 	std::string readMarker;
 	std::string readMarkerAdjoint;
 
@@ -107,9 +115,11 @@ protected:
 	std::string fileNameInputReadLowFi;
 	std::string readMarkerLowFi;
 	std::string readMarkerAdjointLowFi;
-	std::string surrogatetype;  // Modified by Kai
+	std::string surrogatetype;
 	std::string fileNameTrainingDataForSurrogate;
 
+	double value = 0;   // constraint threshold
+	int rank = 0;       // for vector output
 
 	bool ifMarkerIsSet = false;
 	bool ifAdjointMarkerIsSet = false;
@@ -118,6 +128,7 @@ protected:
 	vec upperBounds;
 	vec lowerBounds;
 
+    mat pod_basis;
 
 	KrigingModel surrogateModel;
 	AggregationModel surrogateModelGradient;
@@ -128,10 +139,11 @@ protected:
 
 	SurrogateModel *surrogate;
 
+	std::vector<SurrogateModel*> surrogate_vector;
+
 	OutputDevice output;
 
 	unsigned int numberOfIterationsForSurrogateTraining = 10000;
-
 
 	unsigned int dim = 0;
 	bool ifDoErequired = true;
@@ -142,7 +154,8 @@ protected:
 	bool ifParameterBoundsAreSet = false;
 	bool ifMultilevel = false;
 	bool ifDefinitionIsSet = false;
-
+	bool ifVectorOutput = false;        // for vector output
+	long constraint_length = 1;         // for vector constraint
 
 	void readOutputWithoutMarkers(Design &outputDesignBuffer) const;
 
@@ -154,7 +167,6 @@ public:
 	ObjectiveFunction();
 
 	void bindSurrogateModel(void);
-	//void bindSurrogateModel(SURROGATE_MODEL); // Modified by Kai
 
 	void setFunctionPointer(double (*objFun)(double *));
 	void setFunctionPointer(double (*objFun)(double *, double *));
@@ -166,17 +178,20 @@ public:
 	KrigingModel     getSurrogateModel(void) const;
 	AggregationModel getSurrogateModelGradient(void) const;
 	MultiLevelModel  getSurrogateModelML(void) const;
-	GEKModel      getGEKModel(void) const;  // Modified by Kai
-	SGEKModel     getSGEKModel(void) const; // Modified by Kai
-
-	//SURROGATE_MODEL surrogateModelType;  // Modified by Kai
+	GEKModel      getGEKModel(void) const;
+	SGEKModel     getSGEKModel(void) const;
 
 	void setGradientOn(void);
 	void setGradientOff(void);
 
+	void setVectorOutputOn(void);
+	void setVectorOutputOff(void);
+	void setConstraintLength(int length);
+
+	mat getPodBasis(void) const;
+
 	void setDisplayOn(void);
 	void setDisplayOff(void);
-
 
 	void setParameterBounds(vec , vec );
 
@@ -196,6 +211,12 @@ public:
 		return name;
 	}
 
+	std::string getexecutableName(void) const{
+
+			return executableName;
+	}
+
+
 	std::string getsurrogatetype(void) const{  // Created by Kai
 
 			return surrogatetype;
@@ -207,7 +228,8 @@ public:
 
 	}
 
-	void setFileNameReadInput(std::string fileName);
+	void setFileNameReadOutputValue(std::string fileName);
+	void setFileNameReadOutputGrad(std::string fileName);
 
 	void saveDoEData(std::vector<rowvec>) const;
 	void setExecutablePath(std::string);
@@ -239,7 +261,10 @@ public:
 	void addDesignToData(Design &d);
 
 	bool checkIfGradientAvailable(void) const;
+	bool checkIfVectorConstraint(void) const;  // Created by Kai
+
 	double interpolate(rowvec x) const;
+	void interpolateWithVariance(rowvec x, double  *mean, double *variance) const;   // Created by Kai
 	void print(void) const;
 	std::string getExecutionCommand(void) const;
 	std::string getExecutionCommandLowFi(void) const;

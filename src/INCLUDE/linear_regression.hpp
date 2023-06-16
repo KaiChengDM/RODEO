@@ -60,6 +60,9 @@ public:
 
 	double interpolateWithGradients(rowvec x) const ;
 	void interpolateWithVariance(rowvec xp,double *f_tilde,double *ssqr) const;
+	void interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) const;
+	vec interpolate_vec(rowvec x) const ;
+
 	void calculateExpectedImprovement(CDesignExpectedImprovement &designCalculated) const;
 	void addNewSampleToData(rowvec newsample);
 
