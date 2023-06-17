@@ -291,8 +291,6 @@ void SurrogateModelData::pod_ROM(void){
 
 	eigenvalue = s%s;
 
-	//rank = 1;
-
 	for (unsigned int i=0; i<numberOfSamples; i++){
 
 	   double ratio = sum(eigenvalue.subvec(0,i))/sum(eigenvalue);
@@ -544,7 +542,18 @@ void SurrogateModelData::normalizeSampleOutput(void){
 	}else {
 
 		mean_y = mean(y);  std_y = stddev(y);
-        y =  (y -mean_y) / std_y;
+
+	    if (std_y == 0){
+
+	    	printf("ERROR: The output samples are the same!\n");
+	    	abort();
+
+	    }else {
+
+	    	y =  (y -mean_y) / std_y;
+
+	    }
+
 	}
 
 	ifOutputIsNormalized = true;
@@ -555,7 +564,6 @@ void SurrogateModelData::normalizeSampleOutput(void){
 void SurrogateModelData::normalizeSampleInputMatrixTest(void){
 
 	assert(boxConstraints.areBoundsSet());
-
 
 	outputToScreen.printMessage("Normalizing and scaling the sample input matrix for test...");
 
@@ -581,7 +589,30 @@ void SurrogateModelData::normalizeSampleInputMatrixTest(void){
 
 }
 
+/*void SurrogateModelData::normalizeSampleOutputTest(void){
 
+	assert(X.n_rows ==  numberOfSamples);
+	assert(X.n_cols ==  dimension);
+
+	assert(boxConstraints.getDimension() == dimension);
+
+	assert(boxConstraints.areBoundsSet());
+
+	// mean_y_vec.zeros(constraintLength); std_y_vec.ones(constraintLength);
+
+	if (ifVectorOutput){
+
+		pod_ROM();  // proper orthogonal decomposition based reduced order model
+
+	}else {
+
+		mean_y = mean(y);  std_y = stddev(y);
+        y =  (y -mean_y) / std_y;
+	}
+
+	ifOutputIsNormalized = true;
+
+}*/
 
 
 void SurrogateModelData::setBoxConstraints(Bounds boxConstraintsInput){

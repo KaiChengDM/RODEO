@@ -267,6 +267,7 @@ void SurrogateModel::normalizeDataTest(void){
 
 
 	data.normalizeSampleInputMatrixTest();
+	//data.normalizeSampleOutputMatrixTest();
 
 }
 
@@ -445,6 +446,9 @@ void SurrogateModel::tryOnTestData(void) const{
 
 	   double std_y =  data.getOutputStd(); double mean_y =  data.getOutputMean();
 
+       cout << "The output std " << std_y  <<  endl;
+       cout << "The output mean " << mean_y <<  endl;
+
 	   for(unsigned int i=0; i<numberOfTestSamples; i++){
 
 		  rowvec xp = data.getRowXTest(i);
@@ -454,7 +458,7 @@ void SurrogateModel::tryOnTestData(void) const{
 
 		  rowvec sample(numberOfEntries);
 		  copyRowVector(sample,x);
-		  sample(dim) =  fTilde*std_y+mean_y ;
+		  sample(dim)    =  fTilde*std_y + mean_y ;
 		  results.row(i) = sample;
 
 	    }

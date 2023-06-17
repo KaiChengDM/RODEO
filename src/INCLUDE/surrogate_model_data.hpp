@@ -63,13 +63,10 @@ private:
 	mat gradient;
 
 	vec y;
-    mat y_vec;       // for vector output
+    mat y_vec;                     // for vector output
 
     double mean_y = 0;
 	double std_y = 1;
-
-	// vec mean_y_vec;
-	// vec std_y_vec;
 
 	rowvec mean_basiscoefficient;
 	rowvec std_basiscoefficient;
@@ -85,7 +82,7 @@ private:
 	mat XTest;
 
     vec YTest;
-    mat Y_vectTest;  // for vector outputY
+    mat Y_vectTest;               // for vector outputY
 
 	OutputDevice outputToScreen;
 	Bounds boxConstraints;
@@ -106,7 +103,7 @@ public:
 	void setVectorOutputOff(void);  // created by kai
 
 	void setConstraintLength(int length);   // created by kai
-	int getConstraintLength(void) const;   // created by kai
+	int  getConstraintLength(void) const;    // created by kai
 
 	void setBoxConstraints(Bounds);
 	void setBoxConstraintsFromData(void);
@@ -130,7 +127,7 @@ public:
 	void normalizeSampleOutput(void);
 
 	void normalizeSampleInputMatrixTest(void);
-	//void normalizeSampleOutputTest(void);
+	// void normalizeSampleOutputTest(void);
 
 
 	bool isDataNormalized(void) const;

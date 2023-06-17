@@ -1209,7 +1209,7 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		iterOpt++;
 
-        cout <<"Number of iterations is " << iterOpt <<endl;
+        cout <<"Number of iterations is " << iterOpt << endl;
 
 #if 0
 		printf("Optimization Iteration = %d\n",iterOpt);
@@ -1570,7 +1570,7 @@ void Optimizer::displayMessage(std::string inputString) const{
 
 	if(ifDisplay){
 
-		std::cout<<inputString<<"\n";
+		std::cout << inputString << "\n";
 
 	}
 }
@@ -1595,14 +1595,14 @@ void Optimizer::boxmin(mat dv, vec dv_l, vec dv_u){
 
 	  int dim = dimension;
 
-	  int kmax;
+	  int kmax = std::min(dim,10);
 
-	  if (dimension < 2)
+	 /* if (dimension < 2)
 	      { kmax = 2;}
       else
-	      { kmax = std::min(dim,4);}
+	      { kmax = std::min(dim,5);} */
 
-	  for (unsigned int k = 0; k < kmax; k++){  // Iterate for kmax times
+	  for (unsigned int k = 0; k < kmax; k++){   // Iterate for kmax times
 
 	   vec dv1 = dv_cur.col(kk);
 

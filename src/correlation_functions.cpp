@@ -65,7 +65,7 @@ mat Correlationfunction::corrbiquadspline_gekriging(mat &X, vec theta){
 	for(unsigned int k=1; k<m;k++){
 
 		ll(k)= m-k;
-		ij.submat(sum(ll1),0,sum(ll)-1,1)   = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
+		ij.submat(sum(ll1),0,sum(ll)-1,1)     = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
 		d.submat(sum(ll1),0,sum(ll)-1,dim-1)  = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
      	ll1(k)= m-k;
 
@@ -94,7 +94,7 @@ mat Correlationfunction::corrbiquadspline_gekriging(mat &X, vec theta){
 
     vec o = linspace(0,m-1,m);
 
-    double epsilonKriging = 2.220446049250313e-12;
+    double epsilonKriging = 2.220446049250313e-16;
     double mu = (10+m)*epsilonKriging;
 
     mat location     = join_cols(ij.rows(idx),repmat(o,1,2));
@@ -184,13 +184,17 @@ mat Correlationfunction::corrbiquadspline_gekriging(mat &X, vec theta){
 			}
 		}
 
-     correlationMatrix = correlationMatrix + correlationMatrix.t()-diagmat(correlationMatrix);
+	 //correlationMatrix = correlationMatrix + correlationMatrix.t()- eye(m*(dim+1),m*(dim+1));
+
+      correlationMatrix = correlationMatrix + correlationMatrix.t()-diagmat(correlationMatrix);
+
      return correlationMatrix;
  }
 
 mat Correlationfunction::corrbiquadspline_gekriging_vec(mat &xtest, mat &X, vec theta){
 
 	unsigned int dim = size(X,1);
+
 	unsigned int m   = size(X,0);
 	unsigned int m1  = size(xtest,0);
 
@@ -282,8 +286,8 @@ mat Correlationfunction::corrgaussian_gekriging(mat &X, vec theta){
 	for(unsigned int k=1; k<m;k++){
 
 		ll(k)= m-k;
-		ij.submat(sum(ll1),0,sum(ll)-1,1)   = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
-		d.submat(sum(ll1),0,sum(ll)-1,dim-1)  = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
+		ij.submat(sum(ll1),0,sum(ll)-1,1)    = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
+		d.submat(sum(ll1),0,sum(ll)-1,dim-1) = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
 		ll1(k)= m-k;
 
     }
@@ -337,7 +341,9 @@ mat Correlationfunction::corrgaussian_gekriging(mat &X, vec theta){
     	}
     }
 
+	// correlationMatrix = correlationMatrix + correlationMatrix.t()- eye(m*(dim+1),m*(dim+1));
 	 correlationMatrix = correlationMatrix + correlationMatrix.t()-diagmat(correlationMatrix);
+
 	 return correlationMatrix;
  }
 
@@ -396,8 +402,8 @@ mat Correlationfunction::corrgaussian_kriging(mat &X, vec theta){
 	for(unsigned int k=1; k<m;k++){
 
 		ll(k)= m-k;
-	    ij.submat(sum(ll1),0,sum(ll)-1,1)   = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
-	    d.submat(sum(ll1),0,sum(ll)-1,dim-1)  = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
+	    ij.submat(sum(ll1),0,sum(ll)-1,1)    = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
+	    d.submat(sum(ll1),0,sum(ll)-1,dim-1) = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
 		ll1(k)= m-k;
 
     }
@@ -424,7 +430,7 @@ mat Correlationfunction::corrgaussian_kriging(mat &X, vec theta){
 
 	sp_mat R(conv_to<umat>::from(location.t()),correlation.t());
 
-	correlationMatrix = R + R.t()-diagmat(R);
+	correlationMatrix = R + R.t() - diagmat(R);
 
 	return correlationMatrix;
 
@@ -468,15 +474,15 @@ mat Correlationfunction::corrbiquadspline_kriging(mat &X,vec theta){
 	mat ij = zeros(mzmax, 2);                      /* initialize matrix with indices */
 	mat d  = zeros(mzmax, dim);                    /* initialize matrix with distances */
 
-	vec ll = zeros(m);
+	vec ll  = zeros(m);
 	vec ll1 = zeros(m);
 
 	for(unsigned int k=1; k<m;k++){
 
-		ll(k)= m-k;
-		ij.submat(sum(ll1),0,sum(ll)-1,1)   = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
-		d.submat(sum(ll1),0,sum(ll)-1,dim-1)  = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
-		ll1(k)= m-k;
+		ll(k) = m-k;
+		ij.submat(sum(ll1),0,sum(ll)-1,1)    = join_rows((k-1)*ones<vec>(m-k),linspace(k,m-1,m-k));
+		d.submat(sum(ll1),0,sum(ll)-1,dim-1) = repmat(X.row(k-1),m-k,1)-X.rows(k,m-1);                    /*  differences between points */
+		ll1(k) = m-k;
 
     }
 
@@ -510,7 +516,8 @@ mat Correlationfunction::corrbiquadspline_kriging(mat &X,vec theta){
 
 	sp_mat R(conv_to<umat>::from(location.t()),correlation.t());
 
-	correlationMatrix = R + R.t()-diagmat(R);
+	correlationMatrix = R + R.t()- diagmat(R);
+
 	return correlationMatrix;
  }
 
@@ -552,5 +559,6 @@ mat Correlationfunction::corrbiquadspline_kriging_vec(mat &xtest, mat &X,vec the
     mat r_g = reshape(r,m,m1);
 
     correlationVec.submat(0,0,m1-1,m-1) = r_g.t();
+
     return correlationVec;
  }

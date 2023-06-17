@@ -24,7 +24,7 @@
  * General Public License along with CoDiPack.
  * If not, see <http://www.gnu.org/licenses/>.
  *
- * Authors: Emre Özkaya, (SciComp, TU Kaiserslautern), Kai Cheng (SDU)
+ * Authors: Emre Özkaya, (SciComp, TU Kaiserslautern)
  *
  *
  *
@@ -54,8 +54,6 @@
 Rodeo_settings settings;
 
 
-
-
 int main(int argc, char* argv[]){
 
 
@@ -72,12 +70,8 @@ int main(int argc, char* argv[]){
 	printf("    RObust DEsign Optimization Package      ");
 	printf("\n\n\n");
 
-
-
-
 	/* initialize random seed*/
 	srand (time(NULL));
-
 
 	changeDirectoryToRodeoHome();
 

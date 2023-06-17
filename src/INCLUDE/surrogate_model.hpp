@@ -72,7 +72,7 @@ protected:
 	OutputDevice output;
 
 	bool ifHasGradientData = false;
-	bool ifVectorOutput = false;
+	bool ifVectorOutput    = false;
 
 	// int  constraint_length;
 

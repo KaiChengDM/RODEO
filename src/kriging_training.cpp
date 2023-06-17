@@ -102,16 +102,16 @@ void KrigingModel::initializeSurrogateModel(void){
 
 	output.printMessage("Initializing the Kriging model...");
 
-	unsigned int dim = data.getDimension();
+	unsigned int dim             = data.getDimension();
 	unsigned int numberOfSamples = data.getNumberOfSamples() ;
 
 	numberOfHyperParameters = dim;
-	Kriging_weights = ones<vec>(dim);
-	correlationMatrix = zeros<mat>(numberOfSamples,numberOfSamples);
-	upperDiagonalMatrix= zeros<mat>(numberOfSamples,numberOfSamples);
-	R_inv_ys_min_beta = zeros<vec>(numberOfSamples);
-	R_inv_I= zeros<vec>(numberOfSamples);
-	vectorOfOnes= ones<vec>(numberOfSamples);
+	Kriging_weights         = ones<vec>(dim);
+	correlationMatrix       = zeros<mat>(numberOfSamples,numberOfSamples);
+	upperDiagonalMatrix     = zeros<mat>(numberOfSamples,numberOfSamples);
+	R_inv_ys_min_beta       = zeros<vec>(numberOfSamples);
+	R_inv_I                 = zeros<vec>(numberOfSamples);
+	vectorOfOnes            = ones<vec>(numberOfSamples);
 
 	if (ifVectorOutput){           // Check if the output is a vector
 
@@ -127,7 +127,7 @@ void KrigingModel::initializeSurrogateModel(void){
 
 	 }
 
-	if(ifUsesLinearRegression){   // currently, we don't use linear regression
+	if(ifUsesLinearRegression){    // currently, we don't use linear regression
 
 		output.printMessage("Linear model is active for the Kriging model...");
 
@@ -545,7 +545,7 @@ double KrigingModel::interpolate(rowvec xp ) const{
 
 	vec r = computeCorrelationVector(xp,theta);
 
-	estimateKriging = beta0+ dot(r,R_inv_ys_min_beta);
+	estimateKriging = beta0 + dot(r,R_inv_ys_min_beta);
 
 	return estimateLinearRegression + estimateKriging;
 
@@ -742,7 +742,7 @@ void KrigingModel::computeCorrelationMatrix(void)  {
 double KrigingModel::likelihood_function(vec theta){
 
 	unsigned int dim = data.getDimension();
-	unsigned int N = data.getNumberOfSamples();
+	unsigned int N   = data.getNumberOfSamples();
 	int mn = N;
 
 	mat X = data.getInputMatrix();
@@ -751,7 +751,7 @@ double KrigingModel::likelihood_function(vec theta){
 
 	// correlationMatrix = correlationfunction.corrbiquadspline_kriging(X,theta);
 
-	 correlationMatrix = correlationfunction.corrgaussian_kriging(X,theta);   // using Guassian kernel
+	correlationMatrix = correlationfunction.corrgaussian_kriging(X,theta);   // using Guassian kernel
 
 	upperDiagonalMatrix = chol(correlationMatrix);
 

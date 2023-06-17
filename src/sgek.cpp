@@ -103,15 +103,15 @@ void SGEKModel::initializeSurrogateModel(void){
 	modelID = SLICED_GRADIENT_ENHANCED_KRIGING;
 	ifHasGradientData = true;
 
-	readData();                 // Modified by Kai
-	normalizeData();            // Modified by Kai
+	readData();
+	normalizeData();
 
 	numberOfHyperParameters = dim;
 
-	GEK_weights =zeros<vec>(numberOfHyperParameters);
-
+	GEK_weights = zeros<vec>(numberOfHyperParameters);
 
 	/* regularization term */
+
 	epsilonGEK = 0.0;
 
 	/* check if two sample are too close to each other */
@@ -133,15 +133,15 @@ void SGEKModel::initializeSurrogateModel(void){
 	}
 
 	sigmaSquared = 0.0;
-	beta0 = 0.0;
+	beta0        = 0.0;
 
 
-	correlationMatrixDot = zeros(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
-	upperDiagonalMatrixDot= zeros<mat>(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
+	correlationMatrixDot   = zeros(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
+	upperDiagonalMatrixDot = zeros<mat>(numberOfSamples*(dim+1),numberOfSamples*(dim+1));
 
 	R_inv_ys_min_beta = zeros<vec>(numberOfSamples*(dim+1));
-	R_inv_F= zeros<vec>(numberOfSamples*(dim+1));
-	vectorOfF= zeros<vec>(numberOfSamples*(dim+1));
+	R_inv_F   = zeros<vec>(numberOfSamples*(dim+1));
+	vectorOfF = zeros<vec>(numberOfSamples*(dim+1));
 
 	for(unsigned int i=0; i<numberOfSamples; i++) {
 
@@ -157,7 +157,7 @@ void SGEKModel::initializeSurrogateModel(void){
 
 	for(unsigned int i=0; i<numberOfSamples; i++){
 
-		yGEK(i) =y(i);
+		yGEK(i) = y(i);
 
 	}
 
@@ -166,6 +166,8 @@ void SGEKModel::initializeSurrogateModel(void){
 	mat gradientData = data.getGradientMatrix();
 
 	Bounds boxConstraints = data.getBoxConstraints();
+
+	double std_y =  data.getOutputStd();
 
 	for(unsigned int i=0; i<dim; i++){
 
@@ -176,9 +178,7 @@ void SGEKModel::initializeSurrogateModel(void){
 			double xmin = boxConstraints.getLowerBound(i);
 			double xmax = boxConstraints.getUpperBound(i);
 
-			yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin )*dim;
-			//yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin );
-
+			yGEK(numberOfSamples+i*numberOfSamples+j) = gradx(j)*( xmax - xmin )*dim/std_y;
 
 		}
 	}
@@ -193,7 +193,7 @@ void SGEKModel::initializeSurrogateModel(void){
 
 	std::cout << "SGEK model initialization is done...\n";
 
-	snum = 5;
+	snum = 10;                // Slicing number
     slicing(snum);
 
 }
@@ -231,10 +231,10 @@ void SGEKModel::train(void){
 
 	unsigned int dim = data.getDimension();
 
-	vec hyper_l = {0.001*dim, 0.2, 0.001*dim};   // lower bound
-	vec hyper_u = {2.5*dim, 1, 2.5*dim};           // upper bound
+	vec hyper_l = {0.001*dim, 0.2, 0.001*dim};      // lower bound
+	vec hyper_u = {10*dim, 1, 10*dim};              // upper bound
 
-    num = 10;
+    num = 10;                                       // multiple starts
 
 	start = clock();
 
@@ -259,6 +259,7 @@ void SGEKModel::slicing(unsigned int snum ){  // Divide the training data into m
 
 	dim = data.getDimension();
 	unsigned int N = data.getNumberOfSamples();
+
 	unsigned int mn = N*(dim+1);
 
 	if (N<snum){
@@ -284,7 +285,7 @@ void SGEKModel::slicing(unsigned int snum ){  // Divide the training data into m
 
 	unsigned int Hn = floor(N/snum); unsigned int  re = N % snum;     // round down
 
-    field<uvec> index1(snum);              // store the index of sampling sites within each slice
+    field<uvec> index1(snum);                         // store the index of sampling sites within each slice
 
 	if (re == 0){
 	    for (unsigned int k=0; k<snum; k++){
@@ -303,16 +304,15 @@ void SGEKModel::slicing(unsigned int snum ){  // Divide the training data into m
 
 	index = index1;
 
-
 }
 
-void SGEKModel::original_likelihood_function(vec alpha){ //  Original likelihood function
+void SGEKModel::original_likelihood_function(vec alpha){     //  Original likelihood function
 
-	vec theta = alpha(1)*pow(sensitivity,alpha(2))+alpha(3);
+	vec theta = alpha(0)*pow(sensitivity,alpha(1))+alpha(2);
 
 	unsigned int dim = data.getDimension();
-	unsigned int N = data.getNumberOfSamples();
-	unsigned int mn = N*(dim+1);
+	unsigned int N   = data.getNumberOfSamples();
+	unsigned int mn  = N*(dim+1);
 	mat X = data.getInputMatrix();
 
 	correlationMatrixDot = correlationfunction.corrbiquadspline_gekriging(X,theta);
@@ -323,7 +323,7 @@ void SGEKModel::original_likelihood_function(vec alpha){ //  Original likelihood
 
 	vec R_inv_ys(mn); R_inv_ys.fill(0.0);
 
-	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys, yGEK);    /* solve R x = ys */
+	solveLinearSystemCholesky(upperDiagonalMatrixDot, R_inv_ys, yGEK);         /* solve R x = ys */
 
 	R_inv_F = zeros(mn);
 
@@ -339,7 +339,7 @@ void SGEKModel::original_likelihood_function(vec alpha){ //  Original likelihood
 
 	sigmaSquared = (1.0 / (mn)) * dot(ys_min_betaF, R_inv_ys_min_beta);
 
-	 likelihood = mn * log(sigmaSquared) + logdetR;
+	likelihood = mn * log(sigmaSquared) + logdetR;
 
 }
 
@@ -348,7 +348,7 @@ double SGEKModel::likelihood_function(vec alpha){ //  Sliced likelihood function
 
 	vec theta = alpha(0)*pow(sensitivity,alpha(1))+alpha(2);
 
-    dim = data.getDimension();
+    dim              = data.getDimension();
 	unsigned int N   = data.getNumberOfSamples();
 	unsigned int mn  = N*(dim+1);
 
@@ -570,8 +570,7 @@ void  SGEKModel::interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) 
 /*
  * derivative of R(x^i,x^j) w.r.t. x^i_k (for GEK)
  *
- *
- * */
+ */
 
 /* double SGEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
 
@@ -586,29 +585,27 @@ void  SGEKModel::interpolateWithVariance_vec(rowvec xp,vec &f_tilde, vec &ssqr) 
 double SGEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
 
 	vec theta = GEK_weights;
-	double result;
-    double xi;
-    double ui;
-	double R = computeCorrelation(x_i, x_j, theta);
+		double R  = computeCorrelation(x_i, x_j, theta);
 
-	/*result= -2.0*theta(k)* (x_i(k)-x_j(k))* R; */
+		double result;
+		double xi;
+		double ui;
 
-	xi = fabs(x_i(k)-x_j(k))*theta(k);       /* Modified by Kai Cheng */
-	ui  = sign(x_i(k)-x_j(k))*theta(k);
+		// result= -2.0*theta(k)* (x_i(k)-x_j(k))* R;
 
-	if (xi <= 0.4)
+		xi = fabs(x_i(k)-x_j(k))*theta(k);
+		ui = sign(x_i(k)-x_j(k))*theta(k);
 
-		 { result = -ui*(-30*xi + 105*pow(xi,2) - 195.0/2*pow(xi,3))/(1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4))*R;}
+		double xi2 = xi*xi; double xi3 = xi2*xi;  double xi4 = xi3*xi;
 
-    else if (xi < 1)
+		if (xi <= 0.4)
+			 { result = -ui*(-30*xi + 105*xi2 - 195.0/2*xi3)/(1 - 15*xi2 + 35*xi3 - 195.0/8*xi4)*R;}
+	    else if (xi < 1)
+			 { result = -ui*(-20.0/3 + 20*xi- 20*xi2 + 20.0/3*xi3)/(5/3 - 20.0/3*xi + 10*xi2 - 20.0/3*xi3 + 5.0/3*xi4)*R;}
+		else
+			 { result = 0;}
 
-		 { result = -ui*(-20.0/3 + 20*xi- 20*pow(xi,2) + 20.0/3*pow(xi,3))/(5/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4))*R;}
-
-	else
-
-		 { result = 0;}
-
-	return result;
+		return result;
 }
 
 /*
@@ -629,29 +626,27 @@ double SGEKModel::computedR_dxi(rowvec x_i, rowvec x_j,int k) const{
 double SGEKModel::computedR_dxj(rowvec x_i, rowvec x_j, int k) const {
 
 	vec theta = GEK_weights;
-	double result = 0.0;
-	double R = computeCorrelation(x_i, x_j, theta);
-    double xi;
-    double ui;
+		double R = computeCorrelation(x_i, x_j, theta);
 
-    /* result= 2.0*theta(k)* (x_i(k)-x_j(k))* R;*/
+	    double xi;
+	    double ui;
+		double result;
 
-	xi = fabs(x_i(k)-x_j(k))*theta(k);     /* Modified by Kai Cheng */
-	ui  = sign(x_i(k)-x_j(k))*theta(k);
+	    // result= 2.0*theta(k)* (x_i(k)-x_j(k))* R;
 
-	if (xi <= 0.4)
+		xi = fabs(x_i(k)-x_j(k))*theta(k);
+		ui = sign(x_i(k)-x_j(k))*theta(k);
 
-       { result = -ui*(-30*xi + 105*pow(xi,2) - 195.0/2*pow(xi,3))/(1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4))*R;}
+		double xi2 = xi*xi; double xi3 = xi2*xi;  double xi4 = xi3*xi;
 
-    else if (xi < 1)
+		if (xi <= 0.4)
+	       { result = -ui*(-30*xi + 105*xi2 - 195.0/2*xi3)/(1 - 15*xi2 + 35*xi3 - 195.0/8*xi4)*R;}
+	    else if (xi < 1)
+		   { result = -ui*(-20.0/3 + 20*xi- 20*xi2 + 20.0/3*xi3)/(5.0/3 - 20.0/3*xi + 10*xi2 - 20.0/3*xi3 + 5.0/3*xi4)*R;}
+		else
+		   { result = 0;}
 
-	   { result = -ui*(-20.0/3 + 20*xi- 20*pow(xi,2) + 20.0/3*pow(xi,3))/(5.0/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4))*R;}
-
-	else
-
-	   { result = 0;}
-
-	return result;
+		return result;
 }
 
 /*
@@ -681,51 +676,56 @@ double SGEKModel::computedR_dxj(rowvec x_i, rowvec x_j, int k) const {
 double SGEKModel::computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const{
 
 	double dx;
-	double xi;
-	double xi1;
-	double ui1;
-	double xi2;
-	double ui2;
+		double xi;
+		double xi1;
+		double ui1;
+		double xi2;
+		double ui2;
 
-	vec theta = GEK_weights;
+		vec theta = GEK_weights;
+		double R  = computeCorrelation(x_i, x_j, theta);
 
-	double R = computeCorrelation(x_i, x_j, theta);
+		if (k == l){
 
-	if (k == l){
+	    // dx = 2.0*theta(k)*(-2.0*theta(k)*pow((x_i(k)-x_j(k)),2.0)+1.0)*R;
 
-   /* dx = 2.0*theta(k)*(-2.0*theta(k)*pow((x_i(k)-x_j(k)),2.0)+1.0)*R;*/
+		 xi = fabs(x_i(k)-x_j(k))*theta(k);
 
-	 xi = fabs(x_i(k)-x_j(k))*theta(k);
-	 if (xi <= 0.4)
-		 { dx = -(-30 + 210*xi - 585.0/2*pow(xi,2))*pow(theta(k),2)/(1-15*pow(xi,2) + 35*pow(xi,3)-195.0/8*pow(xi,4))*R;}
-	 else if (xi < 1)
-		 { dx= -(20 - 40*xi + 20*pow(xi,2))*pow(theta(k),2)/(5.0/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4))*R;}
-     else
-		 { dx = 0;}
+		 double xi_2 = xi*xi; double xi_3 = xi_2*xi;  double xi_4 = xi_3*xi;
 
-	}
-	if (k != l) {
-
-		/* dx = -4.0*theta(k)*theta(l)*(x_i(k)-x_j(k))*(x_i(l)-x_j(l))*R;*/
-
-		xi1  = fabs(x_i(k)-x_j(k))*theta(k);     /* Modified by Kai Cheng */
-		ui1  = sign(x_i(k)-x_j(k))*theta(k);
-		xi2  = fabs(x_i(l)-x_j(l))*theta(l);
-		ui2  = sign(x_i(l)-x_j(l))*theta(l);
-
-		if (xi1 <= 0.4 && xi2 <= 0.4)
-			 { dx = -(ui1*(-30*xi1 + 105*pow(xi1,2) - 195.0/2*pow(xi1,3))*ui2*(-30*xi2 + 105*pow(xi2,2) - 195.0/2*pow(xi2,3)))/((1 - 15*pow(xi1,2) + 35*pow(xi1,3) - 195.0/8*pow(xi1,4))*(1 - 15*pow(xi2,2) + 35*pow(xi2,3) - 195.0/8*pow(xi2,4)))*R;}
-		else if (xi1 < 1 && xi2 <= 0.4)
-		     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*pow(xi1,2) + 20.0/3*pow(xi1,3))*ui2*(-30*xi2 + 105*pow(xi2,2) - 195.0/2*pow(xi2,3)))/((5.0/3 - 20.0/3*xi1 + 10*pow(xi1,2) - 20.0/3*pow(xi1,3) + 5.0/3*pow(xi1,4))*(1 - 15*pow(xi2,2) + 35*pow(xi2,3) - 195.0/8*pow(xi2,4)))*R;}
-		else if(xi1 < 1 && xi2 < 1 )
-		     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*pow(xi1,2) + 20.0/3*pow(xi1,3))*ui2*(-20.0/3 + 20*xi2- 20*pow(xi2,2) + 20.0/3*pow(xi2,3)))/((5/3 - 20.0/3*xi1 + 10*pow(xi1,2) - 20.0/3*pow(xi1,3) + 5.0/3*pow(xi1,4))*(5.0/3 - 20.0/3*xi2 + 10*pow(xi2,2) - 20.0/3*pow(xi2,3) + 5.0/3*pow(xi2,4)))*R;}
-		else if (xi1 < 0.4 && xi2 < 1 )
-		     { dx = -(ui1*(-30*xi1 + 105*pow(xi1,2) - 195.0/2*pow(xi1,3))*ui2*(-20.0/3 + 20*xi2- 20*pow(xi2,2) + 20.0/3*pow(xi2,3)))/((1 - 15*pow(xi1,2) + 35*pow(xi1,3) - 195.0/8*pow(xi1,4))*(5.0/3 - 20.0/3*xi2 + 10*pow(xi2,2) - 20.0/3*pow(xi2,3) + 5.0/3*pow(xi2,4)))*R;}
-		else
+		 if (xi <= 0.4)
+			 { dx = -(-30 + 210*xi - 585.0/2*xi_2)*pow(theta(k),2)/(1-15*xi_2 + 35*xi_3-195.0/8*xi_4)*R;}
+		 else if (xi < 1)
+			 { dx = -(20 - 40*xi + 20*xi_2)*pow(theta(k),2)/(5.0/3 - 20.0/3*xi + 10*xi_2 - 20.0/3*xi_3 + 5.0/3*xi_4)*R;}
+	     else
 			 { dx = 0;}
-	}
 
-	return dx;
+		}
+		if (k != l) {
+
+			// dx = -4.0*theta(k)*theta(l)*(x_i(k)-x_j(k))*(x_i(l)-x_j(l))*R;
+
+			xi1  = fabs(x_i(k)-x_j(k))*theta(k);
+			ui1  = sign(x_i(k)-x_j(k))*theta(k);
+			xi2  = fabs(x_i(l)-x_j(l))*theta(l);
+			ui2  = sign(x_i(l)-x_j(l))*theta(l);
+
+		    double xi1_2 = xi1*xi1; double xi1_3 = xi1_2*xi1;  double xi1_4 = xi1_3*xi1;
+		    double xi2_2 = xi2*xi2; double xi2_3 = xi2_2*xi2;  double xi2_4 = xi2_3*xi2;
+
+			if (xi1 <= 0.4 && xi2 <= 0.4)
+				 { dx = -(ui1*(-30*xi1 + 105*xi1_2 - 195.0/2*xi1_3)*ui2*(-30*xi2 + 105*xi2_2 - 195.0/2*xi2_3))/((1 - 15*xi1_2 + 35*xi1_3 - 195.0/8*xi1_4)*(1 - 15*xi2_2 + 35*xi2_3 - 195.0/8*xi2_4))*R;}
+			else if (xi1 < 1 && xi2 <= 0.4)
+			     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*xi1_2 + 20.0/3*xi1_3)*ui2*(-30*xi2 + 105*xi2_2 - 195.0/2*xi2_3))/((5.0/3 - 20.0/3*xi1 + 10*xi1_2 - 20.0/3*xi1_3 + 5.0/3*xi1_4)*(1 - 15*xi2_2 + 35*xi2_3 - 195.0/8*xi2_4))*R;}
+			else if(xi1 < 1 && xi2 < 1 )
+			     { dx = -(ui1*(-20.0/3 + 20*xi1- 20*xi1_2 + 20.0/3*xi1_3)*ui2*(-20.0/3 + 20*xi2- 20*xi2_2 + 20.0/3*xi2_3))/((5/3 - 20.0/3*xi1 + 10*xi1_2 - 20.0/3*xi1_3 + 5.0/3*xi1_4)*(5.0/3 - 20.0/3*xi2 + 10*xi2_2 - 20.0/3*xi2_3 + 5.0/3*xi2_4))*R;}
+			else if (xi1 < 0.4 && xi2 < 1 )
+			     { dx = -(ui1*(-30*xi1 + 105*xi1_2 - 195.0/2*xi1_3)*ui2*(-20.0/3 + 20*xi2- 20*xi2_2 + 20.0/3*xi2_3))/((1 - 15*xi1_2 + 35*xi1_3 - 195.0/8*xi1_4)*(5.0/3 - 20.0/3*xi2 + 10*xi2_2 - 20.0/3*xi2_3 + 5.0/3*xi2_4))*R;}
+			else
+				 { dx = 0;}
+		}
+
+		return dx;
 }
 
 /* double SGEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
@@ -745,20 +745,22 @@ double SGEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
 
 	unsigned int dim = data.getDimension();
 	double sum = 0.0;
-	double xi = 0.0;
+	double xi  = 0.0;
 	vec ss(dim);
 
 	for (unsigned int k = 0; k < dim; k++) {
 
-		  xi = fabs(x_i(k) - x_j(k))*theta(k);
+	     xi = fabs(x_i(k) - x_j(k))*theta(k);
 
-		  if (xi <= 0.4)
-			  {ss(k) = 1 - 15*pow(xi,2) + 35*pow(xi,3) - 195.0/8*pow(xi,4);}
-		  else if (xi < 1)
-			  {ss(k) = 5.0/3 - 20.0/3*xi + 10*pow(xi,2) - 20.0/3*pow(xi,3) + 5.0/3*pow(xi,4);}
-		  else
-			  {ss(k) = 0;}
-        }
+		 double xi2 = xi*xi;   double xi3 = xi2*xi;   double xi4 = xi3*xi;
+
+		 if (xi <= 0.4)
+			 {ss(k) = 1 - 15*xi2 + 35*xi3 - 195.0/8*xi4;}
+	     else if (xi < 1)
+			 {ss(k) = 5.0/3 - 20.0/3*xi + 10*xi2 - 20.0/3*xi3 + 5.0/3*xi4;}
+		 else
+			 {ss(k) = 0;}
+	    }
 
 	return prod(ss);
 }
@@ -917,8 +919,8 @@ void SGEKModel::updateAuxilliaryFields(void){
 		yGEK.set_size(N*(dim+1));
 		vec pd = zeros(N*dim) ;
 		mat gradientData = data.getGradientMatrix();
-
 		Bounds boxConstraints = data.getBoxConstraints();
+		double std_y =  data.getOutputStd();
 
 		for(unsigned int i=0; i<dim; i++){
 
@@ -928,7 +930,7 @@ void SGEKModel::updateAuxilliaryFields(void){
 
 				double xmin = boxConstraints.getLowerBound(i);
 				double xmax = boxConstraints.getUpperBound(i);
-				pd(i*N+j) = gradx(j)*( xmax - xmin )*dim;
+				pd(i*N+j) = gradx(j)*( xmax - xmin )*dim/std_y;
 
 			}
 		}
