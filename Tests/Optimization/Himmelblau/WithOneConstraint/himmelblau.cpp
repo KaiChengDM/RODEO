@@ -1,9 +1,8 @@
 #include<stdio.h>
 #include<math.h>
 #include <unistd.h>
-#include <iostream>
-#include <armadillo>
-using namespace arma;
+#include <fstream>
+
 using namespace std;
 
 double Himmelblau(double *x){

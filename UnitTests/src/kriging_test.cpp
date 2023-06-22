@@ -136,14 +136,16 @@ TEST(testKriging, testInSampleErrorCloseToZeroWithoutTraining){
 	testModel.setBoxConstraints(lb, ub);
 	testModel.normalizeData();
 	testModel.initializeSurrogateModel();
-
-
+	double mean_y = testModel.readOutputMean();
+	double std_y =  testModel.readOutputStd();
 
 	rowvec xp(2); xp(0) = samples(0,0); xp(1) = samples(0,1);
 
 	rowvec xpnorm = normalizeRowVector(xp,lb,ub);
 
 	double ftilde = testModel.interpolate(xpnorm);
+
+	ftilde = ftilde *std_y+mean_y;
 
 	double error = fabs(ftilde - samples(0,2));
 	EXPECT_LT(error, 10E-6);
@@ -167,7 +169,6 @@ TEST(testKriging, testInSampleErrorCloseToZeroAfterTraining){
 
 	}
 
-
 	vec lb(2); lb.fill(-1.0);
 	vec ub(2); ub.fill(2.0);
 	saveMatToCVSFile(samples,"KrigingTest.csv");
@@ -177,6 +178,8 @@ TEST(testKriging, testInSampleErrorCloseToZeroAfterTraining){
 	testModel.setBoxConstraints(lb, ub);
 	testModel.normalizeData();
 	testModel.initializeSurrogateModel();
+	double mean_y = testModel.readOutputMean();
+	double std_y =  testModel.readOutputStd();
 
 	testModel.setNumberOfTrainingIterations(100);
 
@@ -185,7 +188,7 @@ TEST(testKriging, testInSampleErrorCloseToZeroAfterTraining){
 	rowvec xpnorm = normalizeRowVector(xp,lb,ub);
 
 	double ftilde = testModel.interpolate(xpnorm);
-
+	ftilde = ftilde *std_y+mean_y;
 	double error = fabs(ftilde - samples(0,2));
 	EXPECT_LT(error, 10E-6);
 

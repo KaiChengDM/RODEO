@@ -127,7 +127,6 @@ public:
 	void readEvaluateOutput(Design &d);
 	bool checkFeasibility(double value) const;
 	void addDesignToData(Design &);
-   // void podROM();                 // proper orthogonal decomposition for dimension reduction
 
 	void setInequalityConstraint(ConstraintDefinition inequalityConstraint);
 	void setParametersByDefinition(ConstraintDefinition inequalityConstraint);

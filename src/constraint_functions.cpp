@@ -174,9 +174,9 @@ void ConstraintFunction::readEvaluateOutput(Design &d) {
 
 
 
-	/*  // input from file without using markers
+	  // input from file without using markers
 
-	if(checkIfMarkersAreNotSet()){
+	 /* if(checkIfMarkersAreNotSet()){
 
 		readOutputWithoutMarkers(d);
 
@@ -200,6 +200,9 @@ void ConstraintFunction::readOutputWithoutMarkers(Design &outputDesignBuffer) co
 
 	assert(isNotEmpty(fileNameOutputValueRead));
 
+
+
+
 	if (!ifVectorOutput){
 
 	    std::ifstream inputFileStream(fileNameOutputValueRead, ios::in);
@@ -216,6 +219,11 @@ void ConstraintFunction::readOutputWithoutMarkers(Design &outputDesignBuffer) co
 	    outputDesignBuffer.constraintTrueValues(ID) = functionValue;  // ID is the constraint function ID
 	    inputFileStream.close();
 
+	    if(!ifGradientAvailable){
+	    	 rowvec constraintGradient = zeros<rowvec>(dim);
+	         outputDesignBuffer.constraintGradients.push_back(constraintGradient);  // if gradient is not available, we set it as a zero vector
+
+	    }
 	   // cout << "constraint value is " << outputDesignBuffer.constraintTrueValues(ID)<< endl;
 	}
 

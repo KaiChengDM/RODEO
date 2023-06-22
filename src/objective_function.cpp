@@ -234,7 +234,7 @@ ObjectiveFunction::ObjectiveFunction(){
 	else if (surrogatetype == "agrregation_model"){
 		cout << "Fitting function with Agrregation model" << endl;
 		surrogateModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
-		surrogateModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
+		//surrogateModel.setNameOfInputFile(fileNameTrainingDataForSurrogate);
 		output.printMessage("Binding the surrogate model with the Agrregation modeĺ...");
 		surrogate = &surrogateModelGradient;
 
@@ -916,8 +916,20 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 
 		  *mean = (*mean)*stdvalue+meanvalue;  *variance = (*variance)*stdvalue*stdvalue;
 
-	  }
+		  double constraint_value = value;
 
+		  if (inequalityType == "<") {
+
+			 *mean =  -*mean + constraint_value;
+
+		  }
+
+		  if (inequalityType == ">"){
+
+			 *mean =   *mean - constraint_value;
+		  }
+
+	  }
 }
 
 double ObjectiveFunction::interpolate(rowvec x) const{

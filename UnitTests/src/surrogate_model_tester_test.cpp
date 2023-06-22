@@ -100,7 +100,8 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestLinearRegression){
 	unsigned int N = 50;
 
 	mat dataMatrix(N,dim+1, fill::randu);
-	mat dataMatrixTest(N,dim, fill::randu);
+	//mat dataMatrixTest(N,dim, fill::randu);
+	mat dataMatrixTest(N,dim+1, fill::randu);
 
 	for(unsigned int i=0; i<N; i++){
 
@@ -127,6 +128,8 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestLinearRegression){
 
 
 	vec yTilde = results.col(dim);
+
+
 	double squaredError = 0.0;
 	for(unsigned int i=0; i<N; i++){
 
@@ -174,7 +177,8 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestOrdinaryKriging){
 
 
 	saveMatToCVSFile(trainingData,"trainingData.csv");
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	SurrogateModelTester surrogateTester;
 	surrogateTester.setName("testModel");
@@ -241,7 +245,8 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestUniversalKriging){
 
 
 	saveMatToCVSFile(trainingData,"trainingData.csv");
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	SurrogateModelTester surrogateTester;
 	surrogateTester.setName("testModel");
@@ -307,8 +312,8 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestAggregation){
 	mat testDataInput = himmelblauFunction.getTestSamplesInput();
 
 	saveMatToCVSFile(trainingData,"trainingData.csv");
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
-
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	SurrogateModelTester surrogateTester;
 	surrogateTester.setName("testModel");
@@ -346,8 +351,6 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestAggregation){
 
 	EXPECT_LT(meanSquaredError, 10000.0);
 
-
-
 	remove("surrogateTest.csv");
 	remove("trainingData.csv");
 	remove("testDataInput.csv");
@@ -384,8 +387,8 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestMultiLevel){
 	mat testData      = himmelblauFunction.getTestSamples();
 	mat testDataInput = himmelblauFunction.getTestSamplesInput();
 
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
-
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	surrogateTester.setFileNameTestData("testDataInput.csv");
 
@@ -430,5 +433,143 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestMultiLevel){
 }
 
 
+TEST(testSurrogateModelTester, testperformSurrogateModelTestGEK){
+
+
+	unsigned int dim = 2;
+	unsigned int N = 100;
+
+	TestFunction himmelblauFunction("Himmelblau",dim);
+	himmelblauFunction.setFunctionPointer(HimmelblauAdj);
+	himmelblauFunction.setBoxConstraints(-6.0, 6.0);
+
+	himmelblauFunction.setNumberOfTrainingSamples(N);
+	himmelblauFunction.generateSamplesInputTrainingData();
+	himmelblauFunction.generateTrainingSamples();
+	mat trainingData = himmelblauFunction.getTrainingSamples();
+
+
+	himmelblauFunction.setNumberOfTestSamples(N);
+	himmelblauFunction.generateSamplesInputTestData();
+	himmelblauFunction.generateTestSamples();
+	mat testData      = himmelblauFunction.getTestSamples();
+	mat testDataInput = himmelblauFunction.getTestSamplesInput();
+
+	saveMatToCVSFile(trainingData,"trainingData.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
+
+	SurrogateModelTester surrogateTester;
+	surrogateTester.setName("testModel");
+	surrogateTester.setFileNameTrainingData("trainingData.csv");
+	surrogateTester.setFileNameTestData("testDataInput.csv");
+	surrogateTester.setNumberOfTrainingIterations(1000);
+
+
+	surrogateTester.setSurrogateModel(GRADIENT_ENHANCED_KRIGING);
+
+//	surrogateTester.setDisplayOn();
+
+	surrogateTester.performSurrogateModelTest();
+
+
+	mat results;
+	results.load("surrogateTest.csv", csv_ascii);
+
+	vec yTilde = results.col(dim);
+
+	double squaredError = 0.0;
+	for(unsigned int i=0; i<N; i++){
+
+		double yExact =  testData(i,dim);
+		squaredError+= (yTilde(i) - yExact) * (yTilde(i) - yExact);
+#if 0
+		std::cout<<"yExact = "<<yExact<<" yTilde = "<<yTilde(i)<<"\n";
+#endif
+	}
+
+	double meanSquaredError =  squaredError/N;
+#if 0
+	std::cout<<"MSE = "<<meanSquaredError<<"\n";
+#endif
+
+	EXPECT_LT(meanSquaredError, 10000.0);
+
+	remove("surrogateTest.csv");
+	remove("trainingData.csv");
+	remove("testDataInput.csv");
+
+
+}
+
+
+TEST(testSurrogateModelTester, testperformSurrogateModelTestSGEK){
+
+
+	unsigned int dim = 2;
+	unsigned int N = 100;
+
+	TestFunction himmelblauFunction("Himmelblau",dim);
+	himmelblauFunction.setFunctionPointer(HimmelblauAdj);
+	himmelblauFunction.setBoxConstraints(-6.0, 6.0);
+
+	himmelblauFunction.setNumberOfTrainingSamples(N);
+	himmelblauFunction.generateSamplesInputTrainingData();
+	himmelblauFunction.generateTrainingSamples();
+	mat trainingData = himmelblauFunction.getTrainingSamples();
+
+
+	himmelblauFunction.setNumberOfTestSamples(N);
+	himmelblauFunction.generateSamplesInputTestData();
+	himmelblauFunction.generateTestSamples();
+	mat testData      = himmelblauFunction.getTestSamples();
+	mat testDataInput = himmelblauFunction.getTestSamplesInput();
+
+	saveMatToCVSFile(trainingData,"trainingData.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
+
+	SurrogateModelTester surrogateTester;
+	surrogateTester.setName("testModel");
+	surrogateTester.setFileNameTrainingData("trainingData.csv");
+	surrogateTester.setFileNameTestData("testDataInput.csv");
+	surrogateTester.setNumberOfTrainingIterations(1000);
+
+
+	surrogateTester.setSurrogateModel(SLICED_GRADIENT_ENHANCED_KRIGING);
+
+//	surrogateTester.setDisplayOn();
+
+	surrogateTester.performSurrogateModelTest();
+
+
+	mat results;
+	results.load("surrogateTest.csv", csv_ascii);
+
+	vec yTilde = results.col(dim);
+
+	double squaredError = 0.0;
+	for(unsigned int i=0; i<N; i++){
+
+		double yExact =  testData(i,dim);
+		squaredError+= (yTilde(i) - yExact) * (yTilde(i) - yExact);
+#if 0
+		std::cout<<"yExact = "<<yExact<<" yTilde = "<<yTilde(i)<<"\n";
+#endif
+	}
+
+	double meanSquaredError =  squaredError/N;
+#if 0
+	std::cout<<"MSE = "<<meanSquaredError<<"\n";
+#endif
+
+	EXPECT_LT(meanSquaredError, 10000.0);
+
+	remove("surrogateTest.csv");
+	remove("trainingData.csv");
+	remove("testDataInput.csv");
+
+
+}
 
 #endif

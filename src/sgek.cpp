@@ -252,6 +252,8 @@ void SGEKModel::train(void){
 
 	updateAuxilliaryFields();
 
+	//std::cout << "SGEK model training is done...\n";
+
 }
 
 

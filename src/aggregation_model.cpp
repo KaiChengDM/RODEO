@@ -105,7 +105,9 @@ void AggregationModel::determineRhoBasedOnData(void){
 	unsigned int numberOfProbes = 1000;
 	unsigned int dim = data.getDimension();
 	unsigned int numberOfSamples = data.getNumberOfSamples();
+
 	mat gradientData = data.getGradientMatrix();
+
 
 	vec probeDistances(numberOfProbes);
 

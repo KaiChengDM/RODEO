@@ -1,5 +1,8 @@
 #include<stdio.h>
 #include<math.h>
+#include <fstream>
+
+using namespace std;
 
 double HimmelblauAdj(double *x, double *xb) {
 	double tempb;
@@ -44,13 +47,54 @@ double result = HimmelblauAdj(x,xb);
 double constraint1 = Constraint1Adj(x,xbConst1);
 double constraint2 = Constraint2(x);
 
-FILE *outp = fopen("objFunVal.dat","w");
+
+/*FILE *outp = fopen("objFunVal.dat","w");
 fprintf(outp,"objective_function = %15.10f\n",result);
 fprintf(outp,"objective_function_gradient = %15.10f, %15.10f\n",xb[0],xb[1]);
 fprintf(outp,"Constraint1 = %15.10f\n", constraint1);
 fprintf(outp,"Constraint1_gradient = %15.10f, %15.10f\n",xbConst1[0],xbConst1[1]);
 fprintf(outp,"Constraint2 = %15.10f\n", constraint2);
-fclose(outp);
+fclose(outp);*/
+
+
+std::ofstream obj_value;
+obj_value.open("objFunVal.dat");
+obj_value.precision(15);
+obj_value.setf(ios_base::showpoint);
+obj_value << result << std::endl;
+obj_value.close();
+
+std::ofstream obj_grad;
+obj_grad.open("objFunGrad.dat");
+obj_grad.precision(15);
+obj_grad.setf(ios_base::showpoint);
+for (int i=0; i<2;i++){
+	   obj_grad << xb[i] << std::endl;
+  }
+obj_grad.close();
+
+std::ofstream con_value1;
+con_value1.open("conFunVal1.dat");
+con_value1.precision(15);
+con_value1.setf(ios_base::showpoint);
+con_value1 << constraint1 << std::endl;
+con_value1.close();
+
+std::ofstream con_grad1;
+con_grad1.open("conFunGrad1.dat");
+con_grad1.precision(15);
+con_grad1.setf(ios_base::showpoint);
+for (int i=0; i<2;i++){
+	con_grad1 << xbConst1[i] << std::endl;
+  }
+con_grad1.close();
+
+std::ofstream con_value2;
+con_value2.open("conFunVal2.dat");
+con_value2.precision(15);
+con_value2.setf(ios_base::showpoint);
+con_value2 << constraint2 << std::endl;
+con_value2.close();
 
 return 0;
 }

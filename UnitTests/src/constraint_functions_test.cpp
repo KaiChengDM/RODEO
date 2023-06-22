@@ -137,7 +137,10 @@ TEST(testConstraintFunctions, testreadEvaluateOutputWithoutMarker){
 	readOutputTestFile.close();
 
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest.setID(0);
 
 	constraintFunTest.readEvaluateOutput(d);
@@ -150,16 +153,35 @@ TEST(testConstraintFunctions, testreadEvaluateOutputWithoutMarkerWithAdjoint){
 
 	Design d(4);
 	d.setNumberOfConstraints(1);
+
 	std::ofstream readOutputTestFile;
-	readOutputTestFile.open ("readOutputTestFile.txt");
-	readOutputTestFile << "2.144 1 2 3 4\n";
+	readOutputTestFile.open ("readOutputValueTestFile.txt");
+	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
+	/*std::ofstream readOutputTestFile;
+	readOutputTestFile.open ("readOutputGradTestFile.txt");
+	readOutputTestFile << "1 2 3 4\n";
+	readOutputTestFile.close();*/
+
+	std::ofstream readOutputTestFile1;
+	readOutputTestFile1.open ("readOutputGradTestFile.txt");
+	for (int i=0; i<4;i++){
+		readOutputTestFile1 << i+1 << std::endl;
+	  }
+	readOutputTestFile1.close();
+
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	constraintFunTest.setFileNameReadOutputValue("readOutputValueTestFile.txt");
+	constraintFunTest.setFileNameReadOutputGrad("readOutputGradTestFile.txt");
+
 	constraintFunTest.setID(0);
 	constraintFunTest.setGradientOn();
 	constraintFunTest.readEvaluateOutput(d);
+
 	EXPECT_EQ(d.constraintTrueValues(0),2.144);
 	rowvec gradientResult = d.constraintGradients.front();
 	EXPECT_EQ(gradientResult(0),1);
@@ -167,31 +189,138 @@ TEST(testConstraintFunctions, testreadEvaluateOutputWithoutMarkerWithAdjoint){
 	EXPECT_EQ(gradientResult(2),3);
 	EXPECT_EQ(gradientResult(3),4);
 
-	remove("readOutputTestFile.txt");
+	remove("readOutputValueTestFile.txt");
+	remove("readOutputGradTestFile.txt");
 }
 
 
 
+TEST(testConstraintFunctions, testreadEvaluateThreeOutputsInTheSameFileWithoutMarkersAndTwoOfThemHasAdjoints){
+
+	Design d(4);
+	d.setNumberOfConstraints(3);
+
+	std::ofstream readOutputTestFile;
+	readOutputTestFile.open ("readConValueTestFile.txt");
+	//readOutputTestFile << "Constraint1 = 2.144\nConstraint2 = -1\nConstraint2Gradient = 1,2,3,4\nConstraint3 = -1.6\nConstraint3Gradient = -1,-2,-3,-4";
+	readOutputTestFile << "2.144\n";
+	readOutputTestFile.close();
+
+	std::ofstream readOutputTestFile1;
+	readOutputTestFile1.open ("readConValueTestFile1.txt");
+	readOutputTestFile1 << "-1\n";
+	readOutputTestFile1.close();
+
+	std::ofstream readOutputTestFile2;
+	readOutputTestFile2.open ("readConGradTestFile1.txt");
+	for (int i=0; i<4;i++){
+			readOutputTestFile2 << i+1 << std::endl;
+		  }
+	readOutputTestFile2.close();
+
+	std::ofstream readOutputTestFile3;
+	readOutputTestFile3.open ("readConValueTestFile2.txt");
+	readOutputTestFile3 << "-1.6\n";
+	readOutputTestFile3.close();
+
+	std::ofstream readOutputTestFile4;
+	readOutputTestFile4.open ("readConGradTestFile2.txt");
+	for (int i=0; i<4;i++){
+			readOutputTestFile4 << -i-1 << std::endl;
+		  }
+	readOutputTestFile4.close();
+
+	// first constraint has only value
+	ConstraintFunction constraintFunTest("testConstraintFunction",4);
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	constraintFunTest.setFileNameReadOutputValue("readConValueTestFile.txt");
+
+	constraintFunTest.setID(0);
+	//constraintFunTest.setReadMarker("Constraint1");
+
+	// second constraint has value and gradient
+	ConstraintFunction constraintFunTest2("testConstraintFunction2",4);
+	//constraintFunTest2.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest2.setFileNameReadOutputValue("readConValueTestFile1.txt");
+	constraintFunTest2.setFileNameReadOutputGrad("readConGradTestFile1.txt");
+
+	constraintFunTest2.setID(1);
+	constraintFunTest2.setGradientOn();
+	//constraintFunTest2.setReadMarker("Constraint2");
+	//constraintFunTest2.setReadMarkerAdjoint("Constraint2Gradient");
+
+	// third constraint has value and gradient
+	ConstraintFunction constraintFunTest3("testConstraintFunction3",4);
+	//constraintFunTest3.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest3.setFileNameReadOutputValue("readConValueTestFile2.txt");
+	constraintFunTest3.setFileNameReadOutputGrad("readConGradTestFile2.txt");
+
+	constraintFunTest3.setID(2);
+	constraintFunTest3.setGradientOn();
+	//constraintFunTest3.setReadMarker("Constraint3");
+	//constraintFunTest3.setReadMarkerAdjoint("Constraint3Gradient");
+
+	constraintFunTest.readEvaluateOutput(d);
+	EXPECT_EQ(d.constraintTrueValues(0),2.144);
+
+
+	rowvec gradientResult = d.constraintGradients[0];
+	EXPECT_EQ(gradientResult(0),0);
+	EXPECT_EQ(gradientResult(1),0);
+	EXPECT_EQ(gradientResult(2),0);
+	EXPECT_EQ(gradientResult(3),0);
+
+
+	constraintFunTest2.readEvaluateOutput(d);
+	EXPECT_EQ(d.constraintTrueValues(1),-1);
+
+	gradientResult = d.constraintGradients[1];
+
+	EXPECT_EQ(gradientResult(0),1);
+	EXPECT_EQ(gradientResult(1),2);
+	EXPECT_EQ(gradientResult(2),3);
+	EXPECT_EQ(gradientResult(3),4);
+
+	constraintFunTest3.readEvaluateOutput(d);
+	EXPECT_EQ(d.constraintTrueValues(2),-1.6);
+
+	gradientResult = d.constraintGradients[2];
+	EXPECT_EQ(gradientResult(0),-1);
+	EXPECT_EQ(gradientResult(1),-2);
+	EXPECT_EQ(gradientResult(2),-3);
+	EXPECT_EQ(gradientResult(3),-4);
+
+	remove("readConValueTestFile.txt");
+	remove("readConValueTestFile1.txt");
+	remove("readConGradTestFile1.txt");
+	remove("readConValueTestFile2.txt");
+	remove("readConGradTestFile2.txt");
+}
+
+/*
 TEST(testConstraintFunctions, testreadEvaluateOutputWithMarkerWithoutAdjoint){
 
 	Design d(4);
 	d.setNumberOfConstraints(1);
 	std::ofstream readOutputTestFile;
 	readOutputTestFile.open ("readOutputTestFile.txt");
-	readOutputTestFile << "myConstraint = 2.144\n";
+	//readOutputTestFile << "myConstraint = 2.144\n";
+	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
 
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	constraintFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest.setID(0);
-	constraintFunTest.setReadMarker("myConstraint");
+	//constraintFunTest.setReadMarker("myConstraint");
 
 	constraintFunTest.readEvaluateOutput(d);
 	EXPECT_EQ(d.constraintTrueValues(0),2.144);
 	remove("readOutputTestFile.txt");
-
-
 
 }
 
@@ -204,8 +333,14 @@ TEST(testConstraintFunctions, testreadEvaluateOutputWithMarkerWithAdjoint){
 	readOutputTestFile << "myConstraint = 2.144\nConstraintGradient = 1,2,3,4\n";
 	readOutputTestFile.close();
 
+
+
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	constraintFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest.setID(0);
 	constraintFunTest.setReadMarker("myConstraint");
 	constraintFunTest.setReadMarkerAdjoint("ConstraintGradient");
@@ -229,8 +364,6 @@ TEST(testConstraintFunctions, testreadEvaluateOutputWithMarkerWithAdjoint){
 
 
 
-
-
 TEST(testConstraintFunctions, testreadEvaluateThreeOutputsInTheSameFileWithMarkersAndTwoOfThemHasAdjoints){
 
 	Design d(4);
@@ -240,23 +373,30 @@ TEST(testConstraintFunctions, testreadEvaluateThreeOutputsInTheSameFileWithMarke
 	readOutputTestFile << "Constraint1 = 2.144\nConstraint2 = -1\nConstraint2Gradient = 1,2,3,4\nConstraint3 = -1.6\nConstraint3Gradient = -1,-2,-3,-4";
 	readOutputTestFile.close();
 
-	/* first constraint has only value */
+	// first constraint has only value
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	constraintFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest.setID(0);
 	constraintFunTest.setReadMarker("Constraint1");
 
-	/* second constraint has value and gradient*/
+	// second constraint has value and gradient
 	ConstraintFunction constraintFunTest2("testConstraintFunction2",4);
-	constraintFunTest2.setFileNameReadInput("readOutputTestFile.txt");
+	//constraintFunTest2.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest2.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest2.setID(1);
 	constraintFunTest2.setGradientOn();
 	constraintFunTest2.setReadMarker("Constraint2");
 	constraintFunTest2.setReadMarkerAdjoint("Constraint2Gradient");
 
-	/* third constraint has value and gradient*/
+	// third constraint has value and gradient
 	ConstraintFunction constraintFunTest3("testConstraintFunction3",4);
-	constraintFunTest3.setFileNameReadInput("readOutputTestFile.txt");
+	//constraintFunTest3.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest3.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest3.setID(2);
 	constraintFunTest3.setGradientOn();
 	constraintFunTest3.setReadMarker("Constraint3");
@@ -306,15 +446,20 @@ TEST(testConstraintFunctions, testreadEvaluateObjectiveFunctionAndConstraintInTh
 	readOutputTestFile.close();
 
 
-	/* constraint has only value */
+	// constraint has only value
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	constraintFunTest.setReadMarker("Constraint1");
 	constraintFunTest.setID(0);
 
-	/* objective function has only value */
+	// objective function has only value
 	ObjectiveFunction objFunTest("testObjFun",4);
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	objFunTest.setReadMarker("ObjectiveFunction");
 
 
@@ -341,7 +486,10 @@ TEST(testConstraintFunctions, testreadEvaluateObjectiveFunctionAndConstraintInTh
 	readOutputTestFile.close();
 
 	ObjectiveFunction objFunTest("testObjFun",4);
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
+
 	objFunTest.setReadMarker("ObjectiveFunction");
 	objFunTest.setReadMarkerAdjoint("ObjectiveFunctionGradient");
 	objFunTest.setGradientOn();
@@ -358,7 +506,10 @@ TEST(testConstraintFunctions, testreadEvaluateObjectiveFunctionAndConstraintInTh
 
 
 	ConstraintFunction constraintFunTest("testConstraintFunction",4);
-	constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//constraintFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	constraintFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
+
 	constraintFunTest.setReadMarker("Constraint1");
 	constraintFunTest.setReadMarkerAdjoint("Constraint1Gradient");
 	constraintFunTest.setGradientOn();
@@ -376,6 +527,6 @@ TEST(testConstraintFunctions, testreadEvaluateObjectiveFunctionAndConstraintInTh
 	remove("readOutputTestFile.txt");
 
 
-}
+}*/
 
 #endif

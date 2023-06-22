@@ -455,7 +455,6 @@ vec ConfigKeyList::getConfigKeyVectorDoubleValue(std::string key) const{
 
 std::string ConfigKeyList::getConfigKeyStringVectorValueAtIndex(std::string key, unsigned int indx) const{
 
-
 	assert(!key.empty());
 
 	std::string emptyString;
@@ -464,7 +463,7 @@ std::string ConfigKeyList::getConfigKeyStringVectorValueAtIndex(std::string key,
 
 	assert(keyFound.type == "stringVector");
 
-	if(indx>=keyFound.vectorStringValue.size()){
+	if(indx >= keyFound.vectorStringValue.size()){
 
 		return emptyString;
 

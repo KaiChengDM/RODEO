@@ -63,6 +63,10 @@ void Design::setNumberOfConstraints(unsigned int howManyConstraints){
 	numberOfConstraints = howManyConstraints;
 	constraintTrueValues = zeros<rowvec>(numberOfConstraints);
 
+	//constraintGradients = zeros<rowvec>(numberOfConstraints);
+
+	//rowvec constraintGradient = zeros<rowvec>(dimension);
+
 
 }
 

@@ -239,8 +239,6 @@ void LHSSamples::generateSamples(void){
 #endif
 
 
-
-
 	} /* end of while */
 
 

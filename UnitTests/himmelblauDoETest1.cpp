@@ -1,5 +1,8 @@
 #include<stdio.h>
 #include<math.h>
+#include <fstream>
+
+using namespace std;
 
 double Himmelblau(double *x) {
 
@@ -18,9 +21,16 @@ fclose(inp);
 
 double result = Himmelblau(x);
 
-FILE *outp = fopen("objFunVal.dat","w");
+/*FILE *outp = fopen("objFunVal.dat","w");
 fprintf(outp,"objective_function = %15.10f\n",result);
-fclose(outp);
+fclose(outp);*/
+
+std::ofstream obj_value;
+obj_value.open("objFunVal.dat");
+obj_value.precision(15);
+obj_value.setf(ios_base::showpoint);
+obj_value << result << std::endl;
+obj_value.close();
 
 return 0;
 }

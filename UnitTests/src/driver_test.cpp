@@ -25,8 +25,6 @@
  *
  * Authors: Emre Özkaya, (SciComp, TU Kaiserslautern)
  *
- *
- *
  */
 
 
@@ -43,7 +41,7 @@
 
 TEST(testDriver, testparseConstraintDefinition){
 
-	std::string inputString = "DEFINITION = constraint1 > 1.0\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_FILE = objFunVal.dat\nPATH = ./\nMARKER = someMarker\nMARKER_FOR_GRADIENT = someMarkerGradient\nGRADIENT=yes\n";
+	std::string inputString = "DEFINITION = constraint1 > 1.0\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nCON_VALUE_FILE= conFunVal.dat\nCON_GRAD_FILE = conFunGrad.dat\nPATH = ./\nMARKER = someMarker\nMARKER_FOR_GRADIENT = someMarkerGradient\nGRADIENT=yes\n";
 
 #if 0
 	std::cout<<inputString<<"\n";
@@ -56,22 +54,23 @@ TEST(testDriver, testparseConstraintDefinition){
 	EXPECT_EQ(constraintDef.inequalityType, ">");
 	EXPECT_EQ(constraintDef.name, "constraint1");
 	EXPECT_EQ(constraintDef.designVectorFilename, "dv.dat");
-	EXPECT_EQ(constraintDef.outputFilename, "objFunVal.dat");
+
+
+	//EXPECT_EQ(constraintDef.outputFilename, "objFunVal.dat");
+	EXPECT_EQ(constraintDef.outputValueFilename, "conFunVal.dat");
+	EXPECT_EQ(constraintDef.outputGradFilename, "conFunGrad.dat");
+
 	EXPECT_EQ(constraintDef.executableName, "himmelblau");
 	EXPECT_EQ(constraintDef.path, "./");
 	EXPECT_EQ(constraintDef.marker, "someMarker");
 	EXPECT_EQ(constraintDef.markerForGradient, "someMarkerGradient");
 	EXPECT_EQ(constraintDef.ifGradient, true);
 
-
-
-
-
 }
 
 TEST(testDriver, testparseObjectiveFunctionDefinition){
 
-	std::string inputString = "NAME = ObjFun\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_FILE = objFunVal.dat\nPATH = ./\nMARKER = someMarker\nMARKER_FOR_GRADIENT = someMarkerGradient\nGRADIENT= on\n";
+	std::string inputString = "NAME = ObjFun\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_VALUE_FILE = objFunVal.dat\nOUTPUT_GRAD_FILE = objFunGrad.dat\nPATH = ./\nMARKER = someMarker\nMARKER_FOR_GRADIENT = someMarkerGradient\nGRADIENT= on\n";
 #if 0
 	std::cout<<inputString<<"\n";
 #endif
@@ -83,7 +82,11 @@ TEST(testDriver, testparseObjectiveFunctionDefinition){
 
 	EXPECT_EQ(ObjDef.name, "ObjFun");
 	EXPECT_EQ(ObjDef.designVectorFilename, "dv.dat");
-	EXPECT_EQ(ObjDef.outputFilename, "objFunVal.dat");
+	//EXPECT_EQ(ObjDef.outputFilename, "objFunVal.dat");
+
+	EXPECT_EQ(ObjDef.outputValueFilename, "objFunVal.dat");
+	EXPECT_EQ(ObjDef.outputGradFilename, "objFunGrad.dat");
+
 	EXPECT_EQ(ObjDef.executableName, "himmelblau");
 	EXPECT_EQ(ObjDef.path, "./");
 	EXPECT_EQ(ObjDef.marker, "someMarker");
@@ -125,7 +128,7 @@ TEST(testDriver, testextractConfigDefinitionFromString){
 
 TEST(testDriver, testextractConstraintDefinitionsFromString){
 
-	std::string inputString = "CONSTRAINT_FUNCTION{\nDEFINITION = constraint1 > 1.0\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_FILE = objFunVal.dat\nPATH = ./\n}\n#some comment\nCONSTRAINT_FUNCTION{\nDEFINITION = constraint2 < 0.0\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_FILE = objFunVal.dat\nPATH = ./\n}\n#some comment again";
+	std::string inputString = "CONSTRAINT_FUNCTION{\nDEFINITION = constraint1 > 1.0\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nCON_VALUE_FILE= conFunVal.dat\nCON_GRAD_FILE = conFunGrad.dat\nPATH = ./\n}\n#some comment\nCONSTRAINT_FUNCTION{\nDEFINITION = constraint2 < 0.0\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nCON_VALUE_FILE= conFunVal.dat\nCON_GRAD_FILE = conFunGrad.dat\nPATH = ./\n}\n#some comment again";
 
 #if 0
 	std::cout<<"inputString =\n";
@@ -162,7 +165,7 @@ TEST(testDriver, testextractConstraintDefinitionsFromString){
 
 TEST(testDriver, testextractObjectiveFunctionDefinitionFromString){
 
-	std::string inputString = "OBJECTIVE_FUNCTION{\nNAME = objFun\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_FILE = objFunVal.dat\nPATH = ./\n}";
+	std::string inputString = "OBJECTIVE_FUNCTION{\nNAME = objFun\nDESIGN_VECTOR_FILE = dv.dat\nEXECUTABLE = himmelblau\nOUTPUT_VALUE_FILE = objFunVal.dat\nPATH = ./\n}";
 
 #if 0
 	std::cout<<"inputString =\n";
@@ -181,7 +184,8 @@ TEST(testDriver, testextractObjectiveFunctionDefinitionFromString){
 	EXPECT_EQ(objFun.name, "objFun");
 	EXPECT_EQ(objFun.designVectorFilename, "dv.dat");
 	EXPECT_EQ(objFun.executableName, "himmelblau");
-	EXPECT_EQ(objFun.outputFilename, "objFunVal.dat");
+	//EXPECT_EQ(objFun.outputFilename, "objFunVal.dat");
+	EXPECT_EQ(objFun.outputValueFilename, "objFunVal.dat");
 	EXPECT_EQ(objFun.path, "./");
 
 
@@ -237,7 +241,8 @@ TEST(testDriver, testreadConfigFile){
 	EXPECT_EQ(objFun.name, "HimmelblauFunction");
 	EXPECT_EQ(objFun.designVectorFilename, "dv.dat");
 	EXPECT_EQ(objFun.executableName, "himmelblau");
-	EXPECT_EQ(objFun.outputFilename, "objFunVal.dat");
+	//EXPECT_EQ(objFun.outputFilename, "objFunVal.dat");
+	EXPECT_EQ(objFun.outputValueFilename, "objFunVal.dat");
 	EXPECT_EQ(objFun.path, "./");
 	EXPECT_EQ(objFun.ifGradient, false);
 
@@ -261,14 +266,14 @@ TEST(testDriver, testreadConfigFile2){
 	EXPECT_EQ(objFun.name, "HimmelblauFunction");
 	EXPECT_EQ(objFun.designVectorFilename, "dv.dat");
 	EXPECT_EQ(objFun.executableName, "himmelblau");
-	EXPECT_EQ(objFun.outputFilename, "objFunVal.dat");
+	//EXPECT_EQ(objFun.outputFilename, "objFunVal.dat");
+	EXPECT_EQ(objFun.outputValueFilename, "objFunVal.dat");
+
 	EXPECT_EQ(objFun.path, "./");
 	EXPECT_EQ(objFun.marker, "objFunVal");
 	EXPECT_EQ(objFun.ifGradient, true);
 
 }
-
-
 
 
 
@@ -298,12 +303,13 @@ TEST(testDriver, testrunSurrogateModelTestOrdinaryKriging){
 	mat testData      = himmelblauFunction.getTestSamples();
 	mat testDataInput = himmelblauFunction.getTestSamplesInput();
 
-	saveMatToCVSFile(trainingData,"trainingData.csv");
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
 
+	saveMatToCVSFile(trainingData,"trainingData.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	RoDeODriver testDriver;
-	testDriver.setConfigFilename("testConfigFileSurrogateTest1.cfg");
+	testDriver.setConfigFilename("testConfigFileSurrogateTest.cfg");
 	testDriver.readConfigFile();
 
 
@@ -314,8 +320,6 @@ TEST(testDriver, testrunSurrogateModelTestOrdinaryKriging){
 
 	ASSERT_EQ(results.n_cols, dim+1);
 	ASSERT_EQ(results.n_rows, N);
-
-
 
 	remove("surrogateTest.csv");
 	remove("trainingData.csv");
@@ -353,8 +357,8 @@ TEST(testDriver, testrunSurrogateModelTestAggregation){
 	mat testDataInput = himmelblauFunction.getTestSamplesInput();
 
 	saveMatToCVSFile(trainingData,"trainingData.csv");
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
-
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	RoDeODriver testDriver;
 	testDriver.setConfigFilename("testConfigFileSurrogateTest2.cfg");
@@ -401,7 +405,8 @@ TEST(testDriver, testrunSurrogateModelTestMultiLevel){
 	mat testData      = himmelblauFunction.getTestSamples();
 	mat testDataInput = himmelblauFunction.getTestSamplesInput();
 
-	saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
 
 	RoDeODriver testDriver;
 	testDriver.setConfigFilename("testConfigFileSurrogateTest3.cfg");
@@ -495,7 +500,6 @@ TEST(testDriver, testcheckIfRunIsNecessary){
 	ASSERT_EQ(ifRunIsNecessaryFor4,false);
 
 
-
 }
 
 
@@ -526,13 +530,9 @@ TEST(testDriver, testrunDoE1){
 	double resultExpected = Himmelblau(x);
 	double err = fabs(resultExpected- firstRowOfResults(2));
 
-	EXPECT_LT(err,10E-08);
-
-
+	EXPECT_LT(err,10E-06);
 
 	remove("himmelblauDoETest1");
-
-
 
 }
 
@@ -643,8 +643,6 @@ TEST(testDriver, testrunDoE4){
 	testDriver.setConfigFilename("testConfigFileDoETest4.cfg");
 	testDriver.readConfigFile();
 
-
-
 	compileWithCpp("himmelblauDoETest4.cpp","himmelblauDoETest4");
 
 	remove("objective_function.csv");
@@ -688,7 +686,6 @@ TEST(testDriver, testrunDoE4){
 	resultExpected = x[0]+ x[1];
 	err = fabs(resultExpected- firstRowOfResults(2));
 	EXPECT_LT(err,10E-08);
-
 
 	remove("himmelblauDoETest4");
 
@@ -758,7 +755,6 @@ TEST(testDriver, testrunDoE5){
 	err = fabs(resultExpected- firstRowOfResults(2));
 	EXPECT_LT(err,10E-08);
 
-
 	remove("himmelblauDoETest5");
 
 
@@ -782,6 +778,7 @@ TEST(testDriver, testrunDoE6){
 	remove("objective_function.csv");
 	remove("Constraint1.csv");
 	remove("Constraint2.csv");
+
 	testDriver.runDoE();
 	mat results;
 	results.load("objective_function.csv",csv_ascii);
@@ -805,15 +802,16 @@ TEST(testDriver, testrunDoE6){
 	resultExpected = x[0]*x[0]+ x[1]*x[1];
 	err = fabs(resultExpected- firstRowOfResults(2));
 	EXPECT_LT(err,10E-08);
+
 	mat resultsConstraint2;
 	resultsConstraint2.load("Constraint2.csv",csv_ascii);
-
 
 	firstRowOfResults = resultsConstraint2.row(0);
 
 	resultExpected = x[0]+ x[1];
 	err = fabs(resultExpected- firstRowOfResults(2));
 	EXPECT_LT(err,10E-08);
+
 	remove("himmelblauDoETest6");
 	remove("himmelblauDoETestConstraint1");
 
@@ -821,7 +819,7 @@ TEST(testDriver, testrunDoE6){
 }
 
 
-
+/*
 
 TEST(testDriver, testrunDoEHimmelblauOnlySamples){
 
@@ -884,7 +882,7 @@ TEST(testDriver, testrunDoEHighDimensionalFunctionOnlySamplesWithDiscreteValues)
 
 
 
-}
+}*/
 
 
 

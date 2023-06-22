@@ -73,5 +73,6 @@ int main(void){
   fprintf(outp1,"constraint_gradient = %15.10f, %15.10f, %15.10f, %15.10f, %15.10f, %15.10f, %15.10f, %15.10f, %15.10f, %15.10f\n",xb1[0],xb1[1],xb1[2],xb1[3],xb1[4],xb1[5],xb1[6],xb1[7],xb1[8],xb1[9]);
   fclose(outp1);
   return 0;
+
 }
 

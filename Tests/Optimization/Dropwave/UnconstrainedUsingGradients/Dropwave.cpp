@@ -1,5 +1,9 @@
 #include<stdio.h>
 #include<math.h>
+#include <unistd.h>
+#include <fstream>
+
+using namespace std;
 
 double DropwaveAdj(double *x, double *xb) {
 
@@ -22,10 +26,19 @@ fscanf(inp,"%lf",&x[1]);
 fclose(inp);
 
 double result = DropwaveAdj(x, xb);
-FILE *outp = fopen("objFunVal.dat","w");
-fprintf(outp,"Dropwave_function = %15.10f\n",result);
-fprintf(outp,"Dropwave_gradient = %15.10f, %15.10f\n",xb[0],xb[1]);
-fclose(outp);
+
+std::ofstream obj_value;
+obj_value.open("objFunVal.dat");
+obj_value << result << std::endl;
+obj_value.close();
+
+std::ofstream obj_grad;
+obj_grad.open("objFunGrad.dat");
+for (int i=0; i<2;i++){
+	   obj_grad << xb[i] << std::endl;
+  }
+obj_grad.close();
 
 return 0;
+
 }

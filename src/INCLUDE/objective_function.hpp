@@ -104,8 +104,8 @@ protected:
 	std::string executablePath;
 	std::string jsonFile;
 
-	std::string fileNameOutputValueRead;  // file name for reading function value
-	std::string fileNameOutputGradRead;   // file name for reading function value
+	std::string fileNameOutputValueRead;     // file name for reading function value
+	std::string fileNameOutputGradRead;      // file name for reading function gradient
 
 	std::string readMarker;
 	std::string readMarkerAdjoint;
@@ -134,8 +134,8 @@ protected:
 	AggregationModel surrogateModelGradient;
 	MultiLevelModel surrogateModelML;
 
-	GEKModel gekModel;     // Modified by Kai
-	SGEKModel sgekModel;   // Modified by Kai
+	GEKModel gekModel;
+	SGEKModel sgekModel;
 
 	SurrogateModel *surrogate;
 
@@ -217,7 +217,7 @@ public:
 	}
 
 
-	std::string getsurrogatetype(void) const{  // Created by Kai
+	std::string getsurrogatetype(void) const{
 
 			return surrogatetype;
 		}

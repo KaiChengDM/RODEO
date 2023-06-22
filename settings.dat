@@ -1,5 +1,5 @@
 # current working directory
-WORKING_DIRECTORY=/home/kai/Desktop/RODEO/Tests/SurrogateModels/SGEK/Himmelblau
+WORKING_DIRECTORY=/home/kai/Desktop/RODEO/Tests/Optimization/Himmelblau/UnconstrainedUsingGradients
 # directory for the python scripts
 PYTHON_DIRECTORY=/home/cheng/Desktop/RODEO/python
 # name of the configuration file

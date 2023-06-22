@@ -130,7 +130,7 @@ void SurrogateModelData::readData(string inputFilename){
 
 	outputToScreen.printMessage("Loading data from the file: " + inputFilename);
 
-	cout << "Loading data from the file: " << inputFilename << endl;
+	cout << " Loading data from the file: " << inputFilename << endl;
 
 	bool status = rawData.load(inputFilename.c_str(), csv_ascii);
 
@@ -144,6 +144,7 @@ void SurrogateModelData::readData(string inputFilename){
 		outputToScreen.printErrorMessageAndAbort("Problem with data the input (cvs ascii format), cannot read: " + inputFilename);
 
 	}
+
 
 	numberOfSamples = rawData.n_rows;
 	outputToScreen.printMessage("Number of samples = ", numberOfSamples);
@@ -186,6 +187,7 @@ void SurrogateModelData::readDataTest(string inputFilename){
 	}
 
 	numberOfTestSamples = XrawTest.n_rows;
+
 	outputToScreen.printMessage("Number of test samples = ", numberOfTestSamples);
 
 	XTest = XrawTest.cols(0,dimension-1);

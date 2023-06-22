@@ -594,15 +594,15 @@ void Optimizer::addPenaltyToExpectedImprovementForConstraints(CDesignExpectedImp
 
 		estimateConstraints(designCalculated);
 
-		for (unsigned int i=0; i< numberOfConstraints ; i++){    // Created by Kai
+		for (unsigned int i=0; i< numberOfConstraints ; i++){
 
 			// cout << "i-th probability is " << designCalculated.probability_con(i) << endl;
 
-			designCalculated.valueExpectedImprovement = designCalculated.valueExpectedImprovement*designCalculated.probability_con(i);   // Compute the constrained (g(x) > 0) Expected improvement function
+			designCalculated.valueExpectedImprovement = designCalculated.valueExpectedImprovement*designCalculated.probability_con(i);   // Compute the constrained expected improvement function
 
 		}
 
-		// bool ifConstraintsSatisfied = checkConstraintFeasibility(designCalculated.constraintValues);              // Modified by Kai
+		// bool ifConstraintsSatisfied = checkConstraintFeasibility(designCalculated.constraintValues);
 
 		//  if(!ifConstraintsSatisfied){
 
@@ -662,6 +662,7 @@ void Optimizer::computeConstraintsandPenaltyTerm(Design &d) {
 		}
 
 		d.objectiveFunctionValue = d.trueValue ;  // Modified by kai
+
 		// d.objectiveFunctionValue = d.trueValue + penaltyTerm;
 
 	}
@@ -1226,13 +1227,12 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		/*if(iterOpt%10 == 0){
 
-			zoomInDesignSpace();
-
+			zoomInDesignSpace();             // Currently, we do not zoom the design space
 		}*/
 
 		/* start = clock();
 
-		    findTheMostPromisingDesign();    // find the optimal next point with maximal EI
+		 findTheMostPromisingDesign();       // find the optimal next point with maximal EI
 
 	     finish = clock();
 
@@ -1250,7 +1250,7 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		optimizedDesign.generateRandomDesignVector(lowerBoundsForEIMaximization, upperBoundsForEIMaximization); // give a random initial value
 
-		for(unsigned int k=0; k< 10; k++){
+		for(unsigned int k=0; k< 5; k++){                                     // repeat for 5 times
 
 			  findTheMostPromisingDesign();
 
@@ -1414,9 +1414,8 @@ void Optimizer::calculateImprovementValue(Design &d){
 
 			}
 
-
-
 		}
+
 		if(optimizationType == "maximize"){
 
 			if(d.objectiveFunctionValue > initialobjectiveFunctionValue){
@@ -1437,7 +1436,7 @@ void Optimizer::calculateImprovementValue(Design &d){
 				 //  system(command0.c_str());
 				 //  std::filesystem::copy("Results", "Optimal_results");
 
-				 string command = "cp -R Results Optimal_results";
+				 string command = "cp -R Results Optimal_results";     // store the current optimal results to Optimal_results folder
 				 system(command.c_str());
 
 			  }
@@ -1531,7 +1530,6 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 			copyRowVector(temp,dv);
 			temp(dimension) = currentDesign.trueValue;
 			appendRowVectorToCSVData(temp,filenameCVS);
-
 
 		}
 		else{

@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<math.h>
-#include <armadillo>
-using namespace arma;
+#include <fstream>
+
 using namespace std;
 
 

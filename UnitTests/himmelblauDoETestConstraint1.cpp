@@ -1,7 +1,8 @@
 #include<stdio.h>
 #include<math.h>
+#include <fstream>
 
-
+using namespace std;
 
 double Constraint2(double *x) {
 	
@@ -23,9 +24,16 @@ fclose(inp);
 
 double constraint2 = Constraint2(x);
 
-FILE *outp = fopen("constraint2.dat","w");
+/*FILE *outp = fopen("constraint2.dat","w");
 fprintf(outp,"Constraint2 = %15.10f\n", constraint2);
-fclose(outp);
+fclose(outp);*/
+
+std::ofstream con_value2;
+con_value2.open("conFunVal2.dat");
+con_value2.precision(15);
+con_value2.setf(ios_base::showpoint);
+con_value2 << constraint2 << std::endl;
+con_value2.close();
 
 return 0;
 }

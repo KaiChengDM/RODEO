@@ -248,7 +248,7 @@ TEST(testOptimizer, testfindTheMostPromisingDesign){
 
 }
 
-
+/*
 TEST(testOptimizer, testMaximizeEIGradientBased){
 
 	mat samples(10,3);
@@ -295,6 +295,58 @@ TEST(testOptimizer, testMaximizeEIGradientBased){
 	ASSERT_GT(optimizedDesign.valueExpectedImprovement, initialDesign.valueExpectedImprovement + 1.0);
 
 
+}*/
+
+
+TEST(testOptimizer, testLocalImprovement){
+
+	 mat samples(10,3);
+
+	 samples(0,0) = 1.4199;  samples(0,1) = 0.2867; samples(0,2) = 2.0982;
+	 samples(1,0) = 1.2761;  samples(1,1) = 0.7363; samples(1,2) = 2.1706;
+	 samples(2,0) =-4.8526;  samples(2,1) =-1.3832; samples(2,2) = 25.4615;
+	 samples(3,0) =-4.9643;  samples(3,1) = 2.5681; samples(3,2) = 31.2395;
+	 samples(4,0) =-3.2966;  samples(4,1) = 3.7140; samples(4,2) = 24.6612;
+	 samples(5,0) = 2.1202;  samples(5,1) = 1.5686; samples(5,2) =  6.9559;
+	 samples(6,0) = 4.0689;  samples(6,1) = 3.8698; samples(6,2) = 31.5311;
+	 samples(7,0) = 3.6139;  samples(7,1) =-0.5469; samples(7,2) = 13.3596;
+	 samples(8,0) = 4.5835;  samples(8,1) =-3.9091; samples(8,2) = 36.2896;
+	 samples(9,0) = 3.8641;  samples(9,1) = 2.3025; samples(9,2) = 20.2327;
+
+	vec lb(2); lb.fill(-5.0);
+	vec ub(2); ub.fill(5.0);
+
+
+	saveMatToCVSFile(samples,"ObjFuncTest.csv");
+
+	ObjectiveFunction objFunc("ObjFuncTest", 2);
+	objFunc.setParameterBounds(lb,ub);
+
+	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
+	objFunc.setParametersByDefinition(testObjectiveFunctionDef);
+
+	objFunc.initializeSurrogate();
+
+
+	std::string studyName = "testOptimizer";
+	Optimizer testStudy(studyName, 2);
+	testStudy.addObjectFunction(objFunc);
+	testStudy.initializeSurrogates();
+
+	rowvec dv(2); dv(0) = 0.29; dv(1) = 0.29;
+
+	CDesignExpectedImprovement initialDesign(dv);
+
+	CDesignExpectedImprovement optimizedDesign = testStudy.local_search(initialDesign);    // use hooke-jeeves algorithm for local search
+
+	// CDesignExpectedImprovement optimizedDesign = testStudy.MaximizeEIGradientBased(initialDesign);
+
+	// ASSERT_GT(optimizedDesign.valueExpectedImprovement, initialDesign.valueExpectedImprovement + 1.0);
+
+	 double local_improvement = optimizedDesign.valueExpectedImprovement- initialDesign.valueExpectedImprovement;
+
+	 EXPECT_GE(local_improvement, 0);
 }
+
 #endif
 

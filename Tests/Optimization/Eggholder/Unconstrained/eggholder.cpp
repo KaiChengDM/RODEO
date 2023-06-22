@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<math.h>
 #include <stack>
+#include <fstream>
 
 double Eggholder(double *x){
 	return -(x[1]+47.0)*sin(sqrt(fabs(x[1]+0.5*x[0]+47.0)))-x[0]*sin(sqrt(fabs(x[0]-(x[1]+47.0) )));
@@ -18,9 +19,14 @@ fclose(inp);
 double result = Eggholder(x);
 
 
-FILE *outp = fopen("objFunVal.dat","w");
+/*FILE *outp = fopen("objFunVal.dat","w");
 fprintf(outp,"%15.10f\n",result);
-fclose(outp);
+fclose(outp);*/
+
+std::ofstream obj_value;
+obj_value.open("objFunVal.dat");
+obj_value << result << std::endl;
+obj_value.close();
 
 return 0;
 }

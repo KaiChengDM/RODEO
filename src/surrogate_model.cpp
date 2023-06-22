@@ -446,8 +446,8 @@ void SurrogateModel::tryOnTestData(void) const{
 
 	   double std_y =  data.getOutputStd(); double mean_y =  data.getOutputMean();
 
-       cout << "The output std " << std_y  <<  endl;
-       cout << "The output mean " << mean_y <<  endl;
+     //  cout << "The output std " << std_y  <<  endl;
+	 //  cout << "The output mean " << mean_y <<  endl;
 
 	   for(unsigned int i=0; i<numberOfTestSamples; i++){
 

@@ -63,7 +63,7 @@ RoDeODriver::RoDeODriver(){
 	configKeysObjectiveFunction.add(ConfigKey("OUTPUT_VALUE_FILE","stringVector") ); // file for objective function value
 	configKeysObjectiveFunction.add(ConfigKey("OUTPUT_GRAD_FILE","stringVector") );  // file for objective function gradient
 	configKeysObjectiveFunction.add(ConfigKey("PATH","stringVector") );
-	configKeysObjectiveFunction.add(ConfigKey("JSON_FILE","stringVector") );
+	configKeysObjectiveFunction.add(ConfigKey("JSON_FILE","stringVector") );         // Json file for induheat project
 	configKeysObjectiveFunction.add(ConfigKey("GRADIENT","stringVector") );
 	configKeysObjectiveFunction.add(ConfigKey("EXECUTABLE","stringVector") );
 	configKeysObjectiveFunction.add(ConfigKey("MARKER","stringVector") );
@@ -80,7 +80,7 @@ RoDeODriver::RoDeODriver(){
     configKeysConstraintFunction.add(ConfigKey("CON_VALUE_FILE","stringVector") );   // file for constraint function value
 	configKeysConstraintFunction.add(ConfigKey("CON_GRAD_FILE","stringVector") );    // file for constraint function gradient
 	configKeysConstraintFunction.add(ConfigKey("PATH","stringVector") );
-	configKeysConstraintFunction.add(ConfigKey("JSON_FILE","stringVector") );
+	configKeysConstraintFunction.add(ConfigKey("JSON_FILE","stringVector") );        // Json file for induheat project
 	configKeysConstraintFunction.add(ConfigKey("GRADIENT","stringVector") );
 	configKeysConstraintFunction.add(ConfigKey("EXECUTABLE","stringVector") );
 	configKeysConstraintFunction.add(ConfigKey("MARKER","stringVector") );
@@ -139,7 +139,7 @@ RoDeODriver::RoDeODriver(){
 	availableSurrogateModels.push_back("ORDINARY_KRIGING");
 	availableSurrogateModels.push_back("UNIVERSAL_KRIGING");
 	availableSurrogateModels.push_back("GRADIENT_ENHANCED_KRIGING");
-	availableSurrogateModels.push_back("SLICED_GRADIENT_ENHANCED_KRIGING"); /* Modified by Kai Cheng */
+	availableSurrogateModels.push_back("SLICED_GRADIENT_ENHANCED_KRIGING");
 	availableSurrogateModels.push_back("LINEAR_REGRESSION");
 	availableSurrogateModels.push_back("AGGREGATION");
 	availableSurrogateModels.push_back("MULTI_LEVEL");
@@ -542,8 +542,8 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
 	std::string marker;
 	std::string markerGradient;
     std::string gradient;
-	std::string surrogatetype;            // Modified by Kai
-	std::string vector_field_constraint;  // Created by Kai
+	std::string surrogatetype;
+	std::string vector_field_constraint;
 	std::string jsonFile;
 
 	configKeysConstraintFunction.parseString(inputString);
@@ -555,6 +555,8 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
 
 	definitionBuffer = configKeysConstraintFunction.getConfigKeyStringValue("DEFINITION");
 	designVectorFilename = configKeysConstraintFunction.getConfigKeyStringValue("DESIGN_VECTOR_FILE");
+
+
 	executableName = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("EXECUTABLE",0);
 	outputValueFilename = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("CON_VALUE_FILE",0);
 	outputGradFilename = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("CON_GRAD_FILE",0);
@@ -562,8 +564,8 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
 	marker = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("MARKER",0);
 	markerGradient = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("MARKER_FOR_GRADIENT",0);
 	gradient = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("GRADIENT",0);
-	surrogatetype = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("SURROGATE_CON",0);  // Modified by Kai
-	vector_field_constraint= configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("VECTOR_FIELD_CON",0);    // Created by Kai
+	surrogatetype = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("SURROGATE_CON",0);
+	vector_field_constraint= configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("VECTOR_FIELD_CON",0);
 	jsonFile = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("JSON_FILE",0);
 
 	ConstraintDefinition result(definitionBuffer);
@@ -594,6 +596,12 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
     	numberOfNormalConstraints++;
     }
 
+
+	cout << "gradient is  " <<  gradient <<  endl;
+	cout << "marker gradient is  " << markerGradient <<  endl;
+	cout << "marker is  " << marker <<  endl;
+	cout << "CON_VALUE_FILEis  " << outputValueFilename  <<  endl;
+	cout << "CON_GRAD_FILEis  " << outputGradFilename  <<  endl;
 
 	if(checkIfOn(gradient)){
 
@@ -1198,8 +1206,6 @@ void RoDeODriver::generateDoESamples(void) {
 	vec indicesOfDiscreteVariables = configKeys.getConfigKeyVectorDoubleValue("DISCRETE_VARIABLES");
 
 	printVector(indicesOfDiscreteVariables, "indicesOfDiscreteVariables");
-
-
 
 
 //	DoE.printSamples();

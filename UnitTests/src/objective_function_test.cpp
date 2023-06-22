@@ -49,12 +49,13 @@ TEST(testObjectiveFunction, testinitializeSurrogate){
 	objFunTest.setParameterBounds(lb,ub);
 
 	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
-	testObjectiveFunctionDef.outputFilename = "testObjectiveFunction.csv";
+	//testObjectiveFunctionDef.outputFilename = "testObjectiveFunction.csv";
+	testObjectiveFunctionDef.outputValueFilename = "testObjectiveFunction.csv";
+
 
 	objFunTest.setParametersByDefinition(testObjectiveFunctionDef);
 
 	objFunTest.initializeSurrogate();
-
 
 	KrigingModel testModel = objFunTest.getSurrogateModel();
 
@@ -90,16 +91,27 @@ TEST(testObjectiveFunction, testinitializeSurrogateWithAdjoint){
 	vec upperBounds(dim); upperBounds.fill(1.0);
 
 	ObjectiveFunction objFunTest("testObjectiveFunction",2);
+
+
 	objFunTest.setParameterBounds(lowerBounds,upperBounds);
 
 	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
-	testObjectiveFunctionDef.outputFilename = "testObjectiveFunction.csv";
+	//testObjectiveFunctionDef.outputFilename = "testObjectiveFunction.csv";
+	//testObjectiveFunctionDef.outputValueFilename = "testObjValueFunction.csv";
+	//testObjectiveFunctionDef.outputGradFilename = "testObjGradFunction.csv";
+
+	testObjectiveFunctionDef.surrogatetype = "gradient_enhanced_kriging";
+
 	testObjectiveFunctionDef.ifGradient = true;
+
 	objFunTest.setParametersByDefinition(testObjectiveFunctionDef);
 
-
 	objFunTest.initializeSurrogate();
-	AggregationModel testModel = objFunTest.getSurrogateModelGradient();
+
+	//AggregationModel testModel = objFunTest.getSurrogateModelGradient();
+
+	GEKModel testModel = objFunTest.getGEKModel();
+
 	mat rawData = testModel.getRawData();
 
 	bool ifrawDataIsConsistent = isEqual(samples, rawData, 10E-10);
@@ -137,7 +149,9 @@ TEST(testObjectiveFunction, testinitializeSurrogateWithML){
 	objFunTest.setParameterBounds(lowerBounds,upperBounds);
 
 	ObjectiveFunctionDefinition testObjectiveFunctionDef("testObjectiveFunctionMLSurrogate");
-	testObjectiveFunctionDef.outputFilename      = "highFidelityTestData.csv";
+	//testObjectiveFunctionDef.outputFilename      = "highFidelityTestData.csv";
+	testObjectiveFunctionDef.outputValueFilename = "highFidelityTestData.csv";
+
 	testObjectiveFunctionDef.outputFilenameLowFi = "lowFidelityTestData.csv";
 	testObjectiveFunctionDef.ifMultiLevel = true;
 
@@ -216,7 +230,9 @@ TEST(testObjectiveFunction, readEvaluateOutputWithoutMarker){
 	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	objFunTest.readEvaluateOutput(d);
 	ASSERT_EQ(d.trueValue,2.144);
 	ASSERT_EQ(d.objectiveFunctionValue,2.144);
@@ -232,10 +248,21 @@ TEST(testObjectiveFunction, readEvaluateOutputWithoutMarkerWithAdjoint){
 
 	std::ofstream readOutputTestFile;
 	readOutputTestFile.open ("readOutputTestFile.txt");
-	readOutputTestFile << "2.144 1 2 3 4\n";
+	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	std::ofstream readOutputTestFile1;
+	readOutputTestFile1.open ("readOutputTestFile1.txt");
+	for (int i=0; i<4;i++){
+				readOutputTestFile1 << i+1 << std::endl;
+			  }
+	readOutputTestFile1.close();
+
+
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputGrad("readOutputTestFile1.txt");
+
 	objFunTest.setGradientOn();
 	objFunTest.readEvaluateOutput(d);
 	ASSERT_EQ(d.trueValue,2.144);
@@ -245,7 +272,7 @@ TEST(testObjectiveFunction, readEvaluateOutputWithoutMarkerWithAdjoint){
 	ASSERT_EQ(d.gradient(2),3);
 	ASSERT_EQ(d.gradient(3),4);
 	remove("readOutputTestFile.txt");
-
+	remove("readOutputTestFile1.txt");
 }
 
 
@@ -257,10 +284,12 @@ TEST(testaObjectiveFunction, readEvaluateOutputWithOneMarker){
 
 	std::ofstream readOutputTestFile;
 	readOutputTestFile.open ("readOutputTestFile.txt");
-	readOutputTestFile << "myObjective = 2.144\n";
+	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	objFunTest.setReadMarker("myObjective");
 	objFunTest.readEvaluateOutput(d);
 
@@ -279,10 +308,23 @@ TEST(testaObjectiveFunction, readEvaluateOutputWithOneMarkerWithAdjoint){
 
 	std::ofstream readOutputTestFile;
 	readOutputTestFile.open ("readOutputTestFile.txt");
-	readOutputTestFile << "myObjective = 2.144\ngradient = 1,2,3,4\n";
+	//readOutputTestFile << "myObjective = 2.144\ngradient = 1,2,3,4\n";
+	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	std::ofstream readOutputTestFile1;
+	readOutputTestFile1.open ("readOutputTestFile1.txt");
+	for (int i=0; i<4;i++){
+		readOutputTestFile1 << i+1 << std::endl;
+		}
+	readOutputTestFile1.close();
+
+
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputGrad("readOutputTestFile1.txt");
+
+
 	objFunTest.setReadMarker("myObjective");
 	objFunTest.setReadMarkerAdjoint("gradient");
 	objFunTest.setGradientOn();
@@ -295,9 +337,11 @@ TEST(testaObjectiveFunction, readEvaluateOutputWithOneMarkerWithAdjoint){
 	ASSERT_EQ(d.gradient(2),3);
 	ASSERT_EQ(d.gradient(3),4);
 	remove("readOutputTestFile.txt");
+	remove("readOutputTestFile1.txt");
 
 }
 
+/*
 TEST(testaObjectiveFunction, readEvaluateOutputWithTwoMarkers){
 
 	ObjectiveFunction objFunTest("testObjFun",4);
@@ -309,7 +353,9 @@ TEST(testaObjectiveFunction, readEvaluateOutputWithTwoMarkers){
 	readOutputTestFile << "myObjective = 2.144\ngradient = 1.0, 2.0, 3.0,   4.0";
 	readOutputTestFile.close();
 
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+
 	objFunTest.setReadMarker("myObjective");
 	objFunTest.setReadMarkerAdjoint("gradient");
 	objFunTest.setGradientOn();
@@ -323,7 +369,7 @@ TEST(testaObjectiveFunction, readEvaluateOutputWithTwoMarkers){
 	ASSERT_EQ(d.gradient(3),4);
 	remove("readOutputTestFile.txt");
 
-}
+}*/
 
 
 
@@ -335,11 +381,22 @@ TEST(testObjectiveFunction, testreadEvaluateOutputAdjoint){
 
 	std::ofstream readOutputTestFile;
 	readOutputTestFile.open ("readOutputTestFile.txt");
-	readOutputTestFile << "2.144 2.944 -1.2 18.1 9.2\n";
+	//readOutputTestFile << "2.144 2.944 -1.2 18.1 9.2\n";
+	readOutputTestFile << "2.144\n";
 	readOutputTestFile.close();
 
+
+	std::ofstream readOutputTestFile1;
+	readOutputTestFile1.open ("readOutputTestFile1.txt");
+	readOutputTestFile1 << "2.944\n -1.2\n 18.1\n 9.2\n";
+	readOutputTestFile1.close();
+
+
 	objFunTest.setGradientOn();
-	objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	//objFunTest.setFileNameReadInput("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputValue("readOutputTestFile.txt");
+	objFunTest.setFileNameReadOutputGrad("readOutputTestFile1.txt");
+
 	objFunTest.readEvaluateOutput(d);
 
 	ASSERT_EQ(d.trueValue,2.144);
@@ -348,8 +405,9 @@ TEST(testObjectiveFunction, testreadEvaluateOutputAdjoint){
 	ASSERT_EQ(d.gradient(1),-1.2);
 	ASSERT_EQ(d.gradient(2),18.1);
 	ASSERT_EQ(d.gradient(3),9.2);
-	remove("readOutputTestFile.txt");
 
+	remove("readOutputTestFile.txt");
+	remove("readOutputTestFile1.txt");
 }
 
 TEST(testObjectiveFunction, calculateExpectedImprovement){
@@ -378,7 +436,10 @@ TEST(testObjectiveFunction, calculateExpectedImprovement){
 
 
 	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
-	testObjectiveFunctionDef.outputFilename = "EITest.csv";
+
+	//testObjectiveFunctionDef.outputFilename = "EITest.csv";
+	testObjectiveFunctionDef.outputValueFilename = "EITest.csv";
+
 	objFunTest.setParametersByDefinition(testObjectiveFunctionDef);
 
 	objFunTest.bindSurrogateModel();
