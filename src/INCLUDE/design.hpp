@@ -42,6 +42,7 @@ public:
 
 	rowvec dv;
 	double valueExpectedImprovement;
+	double totalProbabilityConSatisfied = 1;  // total probability of all constraint is satisfied
 	double objectiveFunctionValue;
 	rowvec constraintValues;
 

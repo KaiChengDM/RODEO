@@ -597,11 +597,11 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
     }
 
 
-	cout << "gradient is  " <<  gradient <<  endl;
-	cout << "marker gradient is  " << markerGradient <<  endl;
-	cout << "marker is  " << marker <<  endl;
-	cout << "CON_VALUE_FILEis  " << outputValueFilename  <<  endl;
-	cout << "CON_GRAD_FILEis  " << outputGradFilename  <<  endl;
+//	cout << "gradient is  " <<  gradient <<  endl;
+//	cout << "marker gradient is  " << markerGradient <<  endl;
+//	cout << "marker is  " << marker <<  endl;
+//	cout << "CON_VALUE_FILEis  " << outputValueFilename  <<  endl;
+//	cout << "CON_GRAD_FILEis  " << outputGradFilename  <<  endl;
 
 	if(checkIfOn(gradient)){
 
@@ -944,7 +944,7 @@ ConstraintFunction RoDeODriver::setConstraint(ConstraintDefinition constraintDef
 	int dim = configKeys.getConfigKeyIntValue("DIMENSION");
 
 	ConstraintFunction constraintFunc(constraintDefinition.name, dim);
-	constraintFunc.setParametersByDefinition(constraintDefinition);    // definition of constraint function
+	constraintFunc.setParametersByDefinition(constraintDefinition);        // definition of constraint function
 
 	vec lb = configKeys.getConfigKeyVectorDoubleValue("LOWER_BOUNDS");
 	vec ub = configKeys.getConfigKeyVectorDoubleValue("UPPER_BOUNDS");
@@ -1158,7 +1158,6 @@ Optimizer RoDeODriver::setOptimizationStudy(void) {
 
 	vec lb = configKeys.getConfigKeyVectorDoubleValue("LOWER_BOUNDS");
 	vec ub = configKeys.getConfigKeyVectorDoubleValue("UPPER_BOUNDS");
-
 
 	optimizationStudy.setBoxConstraints(lb,ub);
 

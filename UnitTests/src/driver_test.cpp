@@ -383,6 +383,110 @@ TEST(testDriver, testrunSurrogateModelTestAggregation){
 
 }
 
+
+
+TEST(testDriver, testrunSurrogateModelTestGEK){
+
+
+	/* Here we test the AGGREGATION model using the Himmelblau function */
+
+	remove("trainingData.csv");
+	remove("testDataInput.csv");
+
+	unsigned int dim = 2;
+	unsigned int N = 100;
+
+	TestFunction himmelblauFunction("Himmelblau",dim);
+	himmelblauFunction.setFunctionPointer(HimmelblauAdj);
+	himmelblauFunction.setBoxConstraints(-6.0, 6.0);
+
+	himmelblauFunction.setNumberOfTrainingSamples(N);
+	himmelblauFunction.generateSamplesInputTrainingData();
+	himmelblauFunction.generateTrainingSamples();
+	mat trainingData = himmelblauFunction.getTrainingSamples();
+
+
+	himmelblauFunction.setNumberOfTestSamples(N);
+	himmelblauFunction.generateSamplesInputTestData();
+	himmelblauFunction.generateTestSamples();
+	mat testData      = himmelblauFunction.getTestSamples();
+	mat testDataInput = himmelblauFunction.getTestSamplesInput();
+
+	saveMatToCVSFile(trainingData,"trainingData.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
+
+	RoDeODriver testDriver;
+	testDriver.setConfigFilename("testConfigFileSurrogateTest4.cfg");
+	testDriver.readConfigFile();
+
+
+	testDriver.runSurrogateModelTest();
+
+	mat results;
+	results.load("surrogateTest.csv", csv_ascii);
+
+	ASSERT_EQ(results.n_cols, dim+1);
+	ASSERT_EQ(results.n_rows, N);
+
+	remove("surrogateTest.csv");
+	remove("trainingData.csv");
+	remove("testDataInput.csv");
+
+}
+
+
+TEST(testDriver, testrunSurrogateModelTestSGEK){
+
+
+	/* Here we test the AGGREGATION model using the Himmelblau function */
+
+	remove("trainingData.csv");
+	remove("testDataInput.csv");
+
+	unsigned int dim = 2;
+	unsigned int N = 100;
+
+	TestFunction himmelblauFunction("Himmelblau",dim);
+	himmelblauFunction.setFunctionPointer(HimmelblauAdj);
+	himmelblauFunction.setBoxConstraints(-6.0, 6.0);
+
+	himmelblauFunction.setNumberOfTrainingSamples(N);
+	himmelblauFunction.generateSamplesInputTrainingData();
+	himmelblauFunction.generateTrainingSamples();
+	mat trainingData = himmelblauFunction.getTrainingSamples();
+
+
+	himmelblauFunction.setNumberOfTestSamples(N);
+	himmelblauFunction.generateSamplesInputTestData();
+	himmelblauFunction.generateTestSamples();
+	mat testData      = himmelblauFunction.getTestSamples();
+	mat testDataInput = himmelblauFunction.getTestSamplesInput();
+
+	saveMatToCVSFile(trainingData,"trainingData.csv");
+	//saveMatToCVSFile(testDataInput,"testDataInput.csv");
+	saveMatToCVSFile(testData,"testDataInput.csv");
+
+	RoDeODriver testDriver;
+	testDriver.setConfigFilename("testConfigFileSurrogateTest5.cfg");
+	testDriver.readConfigFile();
+
+
+	testDriver.runSurrogateModelTest();
+
+	mat results;
+	results.load("surrogateTest.csv", csv_ascii);
+
+	ASSERT_EQ(results.n_cols, dim+1);
+	ASSERT_EQ(results.n_rows, N);
+
+	remove("surrogateTest.csv");
+	remove("trainingData.csv");
+	remove("testDataInput.csv");
+
+}
+
+
 TEST(testDriver, testrunSurrogateModelTestMultiLevel){
 
 	int nSamplesLowFi = 200;

@@ -873,7 +873,7 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 			if (inequalityType == "<") {
 
 				mean_vec1 =  - mean_vec1 + constraint_value;
-
+				//cout << " predict value is " <<  mean_vec1 << endl;
 			}
 
 			if (inequalityType == ">"){
@@ -882,6 +882,7 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 			}
 
 		    vec probability(constraint_length);   probability.zeros();
+
 
 		    for (long i = 0; i< constraint_length; i++){
 
@@ -899,9 +900,19 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 
 		     }
 
-		    uword ind = index_min(probability);
+		      uword ind;
+
+             if (prod(probability)==1){
+
+            	   ind = index_min(mean_vec1);
+
+             }else {
+            	   ind = index_min(probability);
+             }
 
 		    *mean = mean_vec1(ind);  *variance = variance_vec1(ind);
+
+		    // cout << " probability is " <<  probability << endl;
 
 		    // cout << " predict value is " <<  *mean << endl;
 		    // cout << " predict variance is " <<  *variance << endl;
@@ -914,7 +925,7 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 		  double meanvalue = surrogate->readOutputMean();
 		  double stdvalue  = surrogate->readOutputStd();
 
-		  *mean = (*mean)*stdvalue+meanvalue;  *variance = (*variance)*stdvalue*stdvalue;
+		  *mean = (*mean)*stdvalue + meanvalue;  *variance = (*variance)*stdvalue*stdvalue;
 
 		  double constraint_value = value;
 

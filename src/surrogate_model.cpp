@@ -513,7 +513,7 @@ void SurrogateModel::tryOnTestData(void) const{
 
 		  		 }else {
 
-		  			 fTilde(j) = fTilde(j) + meanvector(j);                // map back to original space
+		  			 fTilde(j) = fTilde(j) + meanvector(j);                  // map back to original space
 
 		  		 }
 
@@ -521,7 +521,7 @@ void SurrogateModel::tryOnTestData(void) const{
 
 		  	  }
 
-		  	 // mean_vec1 = mean_vec1 % stdvector + meanvector;          // original prediction mean
+		  	 // mean_vec1 = mean_vec1 % stdvector + meanvector;             // original prediction mean
 
 		  	  rowvec sample(numberOfEntries);
 		  	  copyRowVector(sample,x);

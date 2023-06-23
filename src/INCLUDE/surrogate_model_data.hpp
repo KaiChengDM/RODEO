@@ -53,7 +53,7 @@ private:
 
 	bool ifDataHasGradients = false;
 	bool ifDataIsNormalized = false;
-	bool ifVectorOutput = false;   // for vector output
+	bool ifVectorOutput = false;      // for vector output
 	bool ifOutputIsNormalized= false;
 
 	mat rawData;
@@ -63,7 +63,7 @@ private:
 	mat gradient;
 
 	vec y;
-    mat y_vec;                     // for vector output
+    mat y_vec;                       // for vector output
 
     double mean_y = 0;
 	double std_y = 1;

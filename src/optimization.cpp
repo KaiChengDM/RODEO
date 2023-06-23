@@ -594,13 +594,19 @@ void Optimizer::addPenaltyToExpectedImprovementForConstraints(CDesignExpectedImp
 
 		estimateConstraints(designCalculated);
 
-		for (unsigned int i=0; i< numberOfConstraints ; i++){
+//		for (unsigned int i=0; i< numberOfConstraints ; i++){
+//
+//			// cout << "i-th probability is " << designCalculated.probability_con(i) << endl;
+//
+//			designCalculated.totalProbabilityConSatisfied = designCalculated.totalProbabilityConSatisfied *designCalculated.probability_con(i);
+//
+//			// designCalculated.valueExpectedImprovement = designCalculated.valueExpectedImprovement*designCalculated.probability_con(i);   // Compute the constrained expected improvement function
+//
+//		}
 
-			// cout << "i-th probability is " << designCalculated.probability_con(i) << endl;
+		designCalculated.totalProbabilityConSatisfied = prod(designCalculated.probability_con);
 
-			designCalculated.valueExpectedImprovement = designCalculated.valueExpectedImprovement*designCalculated.probability_con(i);   // Compute the constrained expected improvement function
-
-		}
+		designCalculated.valueExpectedImprovement = designCalculated.valueExpectedImprovement*designCalculated.totalProbabilityConSatisfied;   // Compute the constrained expected improvement function
 
 		// bool ifConstraintsSatisfied = checkConstraintFeasibility(designCalculated.constraintValues);
 

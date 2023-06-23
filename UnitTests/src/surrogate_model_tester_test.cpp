@@ -435,6 +435,7 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestMultiLevel){
 
 TEST(testSurrogateModelTester, testperformSurrogateModelTestGEK){
 
+	// here we test gradient-enhanced Kriging model
 
 	unsigned int dim = 2;
 	unsigned int N = 100;
@@ -505,6 +506,7 @@ TEST(testSurrogateModelTester, testperformSurrogateModelTestGEK){
 
 TEST(testSurrogateModelTester, testperformSurrogateModelTestSGEK){
 
+	// here we test sliced gradient-enhanced Kriging model
 
 	unsigned int dim = 2;
 	unsigned int N = 100;

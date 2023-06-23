@@ -129,6 +129,7 @@ public:
 	void addDesignToData(Design &);
 
 	void setInequalityConstraint(ConstraintDefinition inequalityConstraint);
+
 	void setParametersByDefinition(ConstraintDefinition inequalityConstraint);
 
 	bool checkIfRunExecutableNecessary(void);

@@ -40,167 +40,284 @@
 
 #ifdef TESTOPTIMIZATION
 
-//TEST(testOptimizer, testaddPenaltyToExpectedImprovementForConstraints){
-//
-//	mat samples(100,3);
-//
-//	/* we construct first test data using the function x1*x1 + x2 * x2 */
-//	for (unsigned int i=0; i<samples.n_rows; i++){
-//		rowvec x(3);
-//		x(0) = generateRandomDouble(0.5,1.0);
-//		x(1) = generateRandomDouble(0.5,1.0);
-//
-//		x(2) = x(0)*x(0) + x(1)*x(1);
-//		samples.row(i) = x;
-//
-//	}
-//	samples(0,0) = 0.0; samples(0,1) = 0.0; samples(0,2) = 0.0;
-//
-//
-//	vec lb(2); lb.fill(0.0);
-//	vec ub(2); ub.fill(1.0);
-//
-//
-//	saveMatToCVSFile(samples,"ObjFuncTest.csv");
-//
-//
-//	/* we construct test data for the constraint x1 + x2 > 0.5*/
-//	for (unsigned int i=0; i<samples.n_rows; i++){
-//		rowvec x(3);
-//		x(0) = generateRandomDouble(0.5,1.0);
-//		x(1) = generateRandomDouble(0.5,1.0);
-//
-//		x(2) = x(0) + x(1);
-//		samples.row(i) = x;
-//
-//	}
-//	saveMatToCVSFile(samples,"Constraint1.csv");
-//
-//
-//
-//	ObjectiveFunction objFunc("ObjFuncTest", 2);
-//	objFunc.setParameterBounds(lb,ub);
-//
-//
-//	ConstraintFunction constraintFunc("Constraint1",2);
-//	constraintFunc.setParameterBounds(lb,ub);
-//
-//	ConstraintDefinition def("Constraint1 > 0.5");
-//
-//	constraintFunc.setInequalityConstraint(def);
-//
-//	std::string studyName = "testOptimizer";
-//	COptimizer testStudy(studyName, 2);
-//	testStudy.addObjectFunction(objFunc);
-//	testStudy.addConstraint(constraintFunc);
-//
-//	testStudy.initializeSurrogates();
-//	objFunc.initializeSurrogate();
-//	constraintFunc.initializeSurrogate();
-//
-//
-//	rowvec dv(2); dv(0) = 0.01; dv(1) = 0.01;
-//	CDesignExpectedImprovement testDesign(dv,1);
-//	objFunc.calculateExpectedImprovement(testDesign);
-//
-//
-//	testStudy.addPenaltyToExpectedImprovementForConstraints(testDesign);
-//
-//	EXPECT_EQ(testDesign.valueExpectedImprovement, 0.0);
-//
-//}
+TEST(testOptimizer, testaddPenaltyToExpectedImprovementForConstraints){
+
+	mat samples(100,3);
+
+	/* we construct first test data using the function x1*x1 + x2 * x2 */
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.5,1.0);
+		x(1) = generateRandomDouble(0.5,1.0);
+
+		x(2) = x(0)*x(0) + x(1)*x(1);
+		samples.row(i) = x;
+
+	}
+	samples(0,0) = 0.0; samples(0,1) = 0.0; samples(0,2) = 0.0;
 
 
-//TEST(testOptimizer, testaddPenaltyToExpectedImprovementForConstraintsWithTwoConstraints){
-//
-//	/* in this test, we have two constraints. One is satisfied the other not */
-//	mat samples(100,3);
-//
-//	/* we construct first test data using the function x1*x1 + x2 * x2 */
-//	for (unsigned int i=0; i<samples.n_rows; i++){
-//		rowvec x(3);
-//		x(0) = generateRandomDouble(0.5,1.0);
-//		x(1) = generateRandomDouble(0.5,1.0);
-//
-//		x(2) = x(0)*x(0) + x(1)*x(1);
-//		samples.row(i) = x;
-//
-//	}
-//	samples(0,0) = 0.0; samples(0,1) = 0.0; samples(0,2) = 0.0;
-//
-//
-//	vec lb(2); lb.fill(0.0);
-//	vec ub(2); ub.fill(1.0);
-//
-//
-//	saveMatToCVSFile(samples,"ObjFuncTest.csv");
-//
-//
-//	/* we construct test data for the first constraint x1 + x2 > 0.5*/
-//	for (unsigned int i=0; i<samples.n_rows; i++){
-//		rowvec x(3);
-//		x(0) = generateRandomDouble(0.5,1.0);
-//		x(1) = generateRandomDouble(0.5,1.0);
-//
-//		x(2) = x(0) + x(1);
-//		samples.row(i) = x;
-//
-//	}
-//	saveMatToCVSFile(samples,"Constraint1.csv");
-//
-//
-//	/* we construct test data for the second constraint x1 < 0.1*/
-//	for (unsigned int i=0; i<samples.n_rows; i++){
-//		rowvec x(3);
-//		x(0) = generateRandomDouble(0.5,1.0);
-//		x(1) = generateRandomDouble(0.5,1.0);
-//
-//		x(2) = x(0);
-//		samples.row(i) = x;
-//
-//	}
-//	saveMatToCVSFile(samples,"Constraint2.csv");
-//
-//
-//
-//
-//	ObjectiveFunction objFunc("ObjFuncTest", 2);
-//	objFunc.setParameterBounds(lb,ub);
-//
-//
-//	ConstraintFunction constraintFunc("Constraint1",2);
-//	constraintFunc.setParameterBounds(lb,ub);
-//
-//	ConstraintDefinition def("Constraint1 > 0.5");
-//	constraintFunc.setInequalityConstraint(def);
-//
-//
-//	ConstraintDefinition def2("Constraint2 < 0.1");
-//	ConstraintFunction constraintFunc2("Constraint2",2);
-//	constraintFunc2.setParameterBounds(lb,ub);
-//
-//	constraintFunc2.setInequalityConstraint(def2);
-//
-//
-//	std::string studyName = "testOptimizer";
-//	COptimizer testStudy(studyName, 2);
-//	testStudy.addObjectFunction(objFunc);
-//	testStudy.addConstraint(constraintFunc);
-//	testStudy.addConstraint(constraintFunc2);
-//
-//	testStudy.initializeSurrogates();
-//	objFunc.initializeSurrogate();
-//
-//
-//	rowvec dv(2); dv(0) = 0.01; dv(1) = 0.01;
-//	CDesignExpectedImprovement testDesign(dv,2);
-//	objFunc.calculateExpectedImprovement(testDesign);
-//
-//	testStudy.addPenaltyToExpectedImprovementForConstraints(testDesign);
-//
-//	EXPECT_EQ(testDesign.valueExpectedImprovement, 0.0);
-//
-//}
+	vec lb(2); lb.fill(0.0);
+	vec ub(2); ub.fill(1.0);
+
+
+	saveMatToCVSFile(samples,"ObjFuncTest.csv");
+
+
+	/* we construct test data for the constraint x1 + x2 > 0.5*/
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.5,1.0);
+		x(1) = generateRandomDouble(0.5,1.0);
+
+		x(2) = x(0) + x(1);
+		samples.row(i) = x;
+
+	}
+	saveMatToCVSFile(samples,"Constraint1.csv");
+
+	ObjectiveFunction objFunc("ObjFuncTest", 2);
+	objFunc.setParameterBounds(lb,ub);
+	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
+    objFunc.setParametersByDefinition(testObjectiveFunctionDef);
+
+
+	ConstraintFunction constraintFunc("Constraint1",2);
+	constraintFunc.setParameterBounds(lb,ub);
+
+	ConstraintDefinition def("Constraint1 > 0.5");
+
+	//constraintFunc.setInequalityConstraint(def);
+	constraintFunc.setParametersByDefinition(def);
+
+	std::string studyName = "testOptimizer";
+
+	Optimizer testStudy(studyName, 2);
+
+	testStudy.addObjectFunction(objFunc);
+	testStudy.addConstraint(constraintFunc);
+
+	testStudy.initializeSurrogates();
+	objFunc.initializeSurrogate();
+
+	//constraintFunc.initializeSurrogate();
+
+	rowvec dv(2); dv(0) = 0.01; dv(1) = 0.5;
+
+	CDesignExpectedImprovement testDesign(dv/2,1);
+
+	objFunc.calculateExpectedImprovement(testDesign);
+
+	testStudy.addPenaltyToExpectedImprovementForConstraints(testDesign);
+
+	EXPECT_EQ(testDesign.valueExpectedImprovement, 0.0);
+	EXPECT_EQ(testDesign.totalProbabilityConSatisfied,1);
+}
+
+
+TEST(testOptimizer, testaddPenaltyToExpectedImprovementForConstraintsWithTwoConstraints){
+
+	/* in this test, we have two constraints. One is satisfied the other not */
+	mat samples(50,3);
+
+	/* we construct first test data using the function x1*x1 + x2 * x2 */
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.5,1.0);
+		x(1) = generateRandomDouble(0.5,1.0);
+
+		x(2) = x(0)*x(0) + x(1)*x(1);
+		samples.row(i) = x;
+
+	}
+	//samples(0,0) = 0.0; samples(0,1) = 0.0; samples(0,2) = 0.0;
+	samples(0,0) = 1; samples(0,1) = 1; samples(0,2) = 2;
+
+	vec lb(2); lb.fill(0.0);
+	vec ub(2); ub.fill(1.0);
+
+
+	saveMatToCVSFile(samples,"ObjFuncTest.csv");
+
+
+	/* we construct test data for the first constraint x1 + x2 > 0.5*/
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.5,1.0);
+		x(1) = generateRandomDouble(0.5,1.0);
+
+		x(2) = x(0) + x(1);
+		samples.row(i) = x;
+
+	}
+	saveMatToCVSFile(samples,"Constraint1.csv");
+
+
+	/* we construct test data for the second constraint x1 < 0.1*/
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.5,1.0);
+		x(1) = generateRandomDouble(0.5,1.0);
+
+		x(2) = x(0);
+		samples.row(i) = x;
+
+	}
+	saveMatToCVSFile(samples,"Constraint2.csv");
+
+	ObjectiveFunction objFunc("ObjFuncTest", 2);
+	objFunc.setParameterBounds(lb,ub);
+	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
+    objFunc.setParametersByDefinition(testObjectiveFunctionDef);
+
+
+	ConstraintFunction constraintFunc("Constraint1",2);
+	constraintFunc.setParameterBounds(lb,ub);
+	ConstraintDefinition def("Constraint1 > 0.5");
+	constraintFunc.setParametersByDefinition(def);
+
+
+	ConstraintFunction constraintFunc2("Constraint2",2);
+	constraintFunc2.setParameterBounds(lb,ub);
+	ConstraintDefinition def2("Constraint2 < 0.1");
+	constraintFunc2.setParametersByDefinition(def2);
+
+
+	std::string studyName = "testOptimizer";
+	Optimizer testStudy(studyName, 2);
+	testStudy.addObjectFunction(objFunc);
+	testStudy.addConstraint(constraintFunc);
+	testStudy.addConstraint(constraintFunc2);
+
+	testStudy.initializeSurrogates();
+	objFunc.initializeSurrogate();
+
+	//constraintFunc.initializeSurrogate();
+	//constraintFunc2.initializeSurrogate();
+
+	rowvec dv(2); dv(0) = 0.5; dv(1) = 0.2;
+	CDesignExpectedImprovement testDesign(dv/2,2);
+	objFunc.calculateExpectedImprovement(testDesign);
+
+	testStudy.addPenaltyToExpectedImprovementForConstraints(testDesign);
+
+	//abort();
+	EXPECT_EQ(testDesign.probability_con(0), 1);
+	EXPECT_EQ(testDesign.probability_con(1), 0);
+	EXPECT_EQ(testDesign.valueExpectedImprovement, 0.0);
+
+}
+
+
+TEST(testOptimizer, testaddPenaltyToExpectedImprovementForVecConstraintsWithTwoConstraints){
+
+	/* in this test, we have two constraints. One is vector, and the other one is scalar */
+	mat samples(50,3);
+
+	/* we construct first test data using the function x1*x1 + x2 * x2 */
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.4,1.0);
+		x(1) = generateRandomDouble(0.4,1.0);
+
+		x(2) = x(0)*x(0) + x(1)*x(1);
+		samples.row(i) = x;
+
+	}
+	//samples(0,0) = 0.0; samples(0,1) = 0.0; samples(0,2) = 0.0;
+	//samples(0,0) = 1; samples(0,1) = 1; samples(0,2) = 2;
+
+	vec lb(2); lb.fill(0.0);
+	vec ub(2); ub.fill(1.0);
+
+
+	saveMatToCVSFile(samples,"ObjFuncTest.csv");
+
+
+	/* we construct test data for the first constraint x1 + x2 > 0.5*/
+	for (unsigned int i=0; i<samples.n_rows; i++){
+		rowvec x(3);
+		x(0) = generateRandomDouble(0.4,1.0);
+		x(1) = generateRandomDouble(0.4,1.0);
+
+		x(2) = x(0) + x(1);
+		samples.row(i) = x;
+
+	}
+	saveMatToCVSFile(samples,"Constraint1.csv");
+
+
+	int m = 1000;
+	mat samples1(50,2+m);
+	vec t = linspace(0,m-1,m);
+	vec xrow(2+m);
+	/* we construct test data for the second constraint x1 < 0.1*/
+	for (unsigned int i=0; i<samples.n_rows; i++){
+
+		vec x(2);
+
+		x(0) = generateRandomDouble(0.5,1.0);
+		x(1) = generateRandomDouble(0.5,1.0);
+
+		xrow.subvec(0,1) = x;
+
+		xrow.subvec(2,1+m) = (x(0)*x(0) + x(1)*x(1))*t/m;
+
+		samples1.row(i) = xrow.t();
+
+	}
+
+	saveMatToCVSFile(samples1,"Constraint2.csv");
+
+	ObjectiveFunction objFunc("ObjFuncTest", 2);
+	objFunc.setParameterBounds(lb,ub);
+	ObjectiveFunctionDefinition testObjectiveFunctionDef("ObjectiveFunctionTest");
+    objFunc.setParametersByDefinition(testObjectiveFunctionDef);
+
+
+	ConstraintFunction constraintFunc("Constraint1",2);
+	constraintFunc.setParameterBounds(lb,ub);
+
+	ConstraintDefinition def("Constraint1 > 0.5");
+	constraintFunc.setParametersByDefinition(def);
+
+
+	ConstraintDefinition def2("Constraint2 < 0.6");
+	ConstraintFunction constraintFunc2("Constraint2",2);
+
+	constraintFunc2.setParameterBounds(lb,ub);
+	constraintFunc2.setVectorOutputOn();
+	constraintFunc2.setConstraintLength(m);
+	constraintFunc2.setParametersByDefinition(def2);
+
+
+	std::string studyName = "testOptimizer";
+	Optimizer testStudy(studyName, 2);
+	testStudy.addObjectFunction(objFunc);
+	testStudy.addConstraint(constraintFunc);
+	testStudy.addConstraint(constraintFunc2);
+
+	testStudy.initializeSurrogates();
+	objFunc.initializeSurrogate();
+
+	//constraintFunc.initializeSurrogate();
+	//constraintFunc2.initializeSurrogate();
+
+
+	rowvec dv(2); dv(0) = 0.2; dv(1) = 0.2;
+	CDesignExpectedImprovement testDesign(dv/2,2);
+	objFunc.calculateExpectedImprovement(testDesign);
+
+	// cout << "Constrained EI value is " << testDesign.valueExpectedImprovement << endl;
+	// cout << "Total constraint value "<< testDesign.constraintValues << endl;
+
+	testStudy.addPenaltyToExpectedImprovementForConstraints(testDesign);
+
+	EXPECT_EQ(testDesign.probability_con(0), 0);
+	EXPECT_EQ(testDesign.probability_con(1), 1);
+	EXPECT_EQ(testDesign.valueExpectedImprovement, 0.0);
+
+}
 
 
 TEST(testOptimizer, testfindTheMostPromisingDesign){
