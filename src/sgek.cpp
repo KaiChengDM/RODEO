@@ -108,7 +108,7 @@ void SGEKModel::initializeSurrogateModel(void){
 
 	numberOfHyperParameters = dim;
 
-	GEK_weights = zeros<vec>(numberOfHyperParameters);
+	GEK_weights = ones<vec>(numberOfHyperParameters);
 
 	/* regularization term */
 
@@ -232,7 +232,7 @@ void SGEKModel::train(void){
 	unsigned int dim = data.getDimension();
 
 	vec hyper_l = {0.001*dim, 0.2, 0.001*dim};      // lower bound
-	vec hyper_u = {10*dim, 1, 10*dim};              // upper bound
+	vec hyper_u = {5*dim, 1, 5*dim};              // upper bound
 
     num = 10;                                       // multiple starts
 
@@ -308,7 +308,7 @@ void SGEKModel::slicing(unsigned int snum ){  // Divide the training data into m
 
 }
 
-void SGEKModel::original_likelihood_function(vec alpha){     //  Original likelihood function
+double SGEKModel::original_likelihood_function(vec alpha){     //  Original likelihood function
 
 	vec theta = alpha(0)*pow(sensitivity,alpha(1))+alpha(2);
 
@@ -342,6 +342,8 @@ void SGEKModel::original_likelihood_function(vec alpha){     //  Original likeli
 	sigmaSquared = (1.0 / (mn)) * dot(ys_min_betaF, R_inv_ys_min_beta);
 
 	likelihood = mn * log(sigmaSquared) + logdetR;
+
+	return likelihood;
 
 }
 
@@ -960,7 +962,6 @@ void SGEKModel::updateAuxilliaryFields(void){
 
 	correlationMatrixDot.save("correlationMatrix.csv",csv_ascii);
 
-
 	int cholesky_return = chol(upperDiagonalMatrixDot, correlationMatrixDot);
 
 	if (cholesky_return == 0) {
@@ -985,7 +986,6 @@ void SGEKModel::updateAuxilliaryFields(void){
 	beta0 = (1.0/dot(vectorOfF,R_inv_F)) * (dot(vectorOfF,R_inv_ys));
 
 	vec ys_min_betaF = yGEK - beta0*vectorOfF;
-
 
 	/* solve R x = ys-beta0*I */
 
@@ -1121,20 +1121,20 @@ void SGEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 	hyper_lb  = hyper_l;                  // lower bound
 	hyper_up  = hyper_u;                  // upper bound
 
-
 	//#pragma omp parallel for
-	for (unsigned int kk=0;kk<num;kk++){
 
-     // cout << " what " << kk << endl;
+	for (unsigned int kk=0;kk<num;kk++){
 
 	  start(hyper.col(kk),hyper_lb,hyper_up);
 
 	  int kmax;
 
-	  if (dim_a < 2)
-	      { kmax = 2;}
-      else
-	      { kmax = std::min(dim_a,4);}
+//	  if (dim < 5)
+//	      { kmax = 5;}
+//      else
+//	      { kmax = std::min(dim,5);}
+
+	  kmax = std::max(dim,5);
 
 	  for (unsigned int k = 0; k < kmax; k++){
 
@@ -1148,16 +1148,12 @@ void SGEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 	  hyper.col(kk) = getAlpha();
 	  likeli_value(kk) = getLikelihood();
 
-      //cout << "current likelihood is " << likeli_value(kk)<< endl;
-      //cout << "current parameter is " << hyper.col(kk) << endl;
 	}
 
 	uword i = likeli_value.index_min();
 
-	// cout << "current likelihood is " << likeli_value << endl;
-
-	likelihood_cur = likeli_value(i);
-	hyper_cur = hyper.col(i);
+	likelihood_optimal = likeli_value(i);
+	hyper_optimal      = hyper.col(i);
 
 }
 
@@ -1314,5 +1310,8 @@ double SGEKModel::getLikelihood(void) const{
 
 	return likelihood_cur;
 
+}
 
+double SGEKModel::getOptimalLikelihood(void) const{
+	return likelihood_optimal;
 }

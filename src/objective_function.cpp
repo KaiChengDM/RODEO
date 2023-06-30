@@ -873,7 +873,7 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 			if (inequalityType == "<") {
 
 				mean_vec1 =  - mean_vec1 + constraint_value;
-				//cout << " predict value is " <<  mean_vec1 << endl;
+
 			}
 
 			if (inequalityType == ">"){
@@ -902,18 +902,23 @@ void ObjectiveFunction::interpolateWithVariance(rowvec x, double *mean, double *
 
 		      uword ind;
 
-             if (prod(probability)==1){
+             if (min(probability)==1){   // find the design that satisfy the constraint with the highest probability
 
             	   ind = index_min(mean_vec1);
 
-             }else {
+             }else if (max(probability)==0){
+
+                    ind = index_max(mean_vec1);
+
+             }else{
+
             	   ind = index_min(probability);
              }
+
 
 		    *mean = mean_vec1(ind);  *variance = variance_vec1(ind);
 
 		    // cout << " probability is " <<  probability << endl;
-
 		    // cout << " predict value is " <<  *mean << endl;
 		    // cout << " predict variance is " <<  *variance << endl;
 

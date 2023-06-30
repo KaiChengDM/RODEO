@@ -74,29 +74,6 @@ protected:
 	bool ifHasGradientData = false;
 	bool ifVectorOutput    = false;
 
-	// int  constraint_length;
-
-    /* Hooke Jeeves algorithm parameter
-    int num;
-    vec hyper_lb;
-    vec hyper_up;
-    vec hyper_in;
-
-    mat hyper_cur;
-    vec hyper_par;
-    vec hyper_optimal;
-
-    vec increment;
-    uvec ind_increment;
-
-    mat hyperoptimizationHistory;
-
-    unsigned int numberOfIteration;
-    int dim;
-
-    vec likelihood_cur;
-    double likelihood_optimal;*/
-
 public:
 
 	bool ifInitialized = false;

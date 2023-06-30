@@ -63,9 +63,7 @@ TEST(testKriging, testReadDataAndNormalize){
 	testModel.readData();
 	testModel.setBoxConstraints(0.0, 200.0);
 
-
 	testModel.normalizeData();
-
 
 	unsigned int N = testModel.getNumberOfSamples();
 	ASSERT_TRUE(N == 10);
@@ -179,6 +177,8 @@ TEST(testKriging, testInSampleErrorCloseToZeroAfterTraining){
 	testModel.setBoxConstraints(lb, ub);
 	testModel.normalizeData();
 	testModel.initializeSurrogateModel();
+	testModel.train();
+
 	double mean_y = testModel.readOutputMean();
 	double std_y =  testModel.readOutputStd();
 

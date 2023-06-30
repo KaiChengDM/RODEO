@@ -84,6 +84,7 @@ int main(int argc, char* argv[]){
 	changeDirectoryToUnitTests();
 
 	testing::InitGoogleTest(&argc, argv);
+
 	int runTestsResult = RUN_ALL_TESTS();
 
 

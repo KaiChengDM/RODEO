@@ -63,7 +63,7 @@ public:
 
 	void setDiscreteParameterIndices(int *indices, int size);
 	void setDiscreteParameterIncrements(vec increments);
-
+	void  setBaseline(vec base_line);
 
 	void saveSamplesToCSVFile(std::string);
 	void visualize(void);

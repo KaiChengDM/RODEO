@@ -25,8 +25,6 @@
  *
  * Authors: Emre Özkaya, (SciComp, TU Kaiserslautern)
  *
- *
- *
  */
 
 #include <stdio.h>
@@ -94,8 +92,10 @@ mat Correlationfunction::corrbiquadspline_gekriging(mat &X, vec theta){
 
     vec o = linspace(0,m-1,m);
 
-    double epsilonKriging = 2.220446049250313e-16;
-    double mu = (10+m)*epsilonKriging;
+//    double epsilonKriging = 2.220446049250313e-16;
+//    double mu = (10+m)*epsilonKriging;
+
+    double mu = 1e-12;
 
     mat location     = join_cols(ij.rows(idx),repmat(o,1,2));
 	vec correlation  = join_cols(r(idx),ones<vec>(m)+mu);
@@ -121,10 +121,17 @@ mat Correlationfunction::corrbiquadspline_gekriging(mat &X, vec theta){
 	vec dr1 = dr;
 
 	for(unsigned int j=0; j<dim;j++){
-	   vec sj = ss1.submat(0,j,size(ss1,0)-1,j);
-	   ss1.submat(0,j,size(ss1,0)-1,j) = dr1(ii);
+
+//	   vec sj = ss1.submat(0,j,size(ss1,0)-1,j);
+//	   ss1.submat(0,j,size(ss1,0)-1,j) = dr1(ii);
+//	   dr1(ii) = prod(ss1,1);
+//	   ss1.submat(0,j,size(ss1,0)-1,j) = sj;
+
+	   vec sj = ss1.col(j);
+	   ss1.col(j) = dr1(ii);
 	   dr1(ii) = prod(ss1,1);
-	   ss1.submat(0,j,size(ss1,0)-1,j) = sj;
+	   ss1.col(j) = sj;
+
 	   ii = ii + mzmax;
    }
 
@@ -139,48 +146,92 @@ mat Correlationfunction::corrbiquadspline_gekriging(mat &X, vec theta){
 
 	// Second order partial derivative
 
-	for (unsigned int i=0; i<dim; i++){
+//	for (unsigned int i=0; i<dim; i++){
+//
+//	     vec ddr = zeros(mn);
+//
+//	     if  (!i1.is_empty())
+//	          ddr(i1) = -(-30 + 210*xi(i1) - 585.0/2*pow(xi(i1),2)) * pow(theta(i),2);
+//
+//	     if  (!i2.is_empty())
+//	          ddr(i2) = -(20- 40*xi(i2) + 20.0*pow(xi(i2),2)) * pow(theta(i),2);
+//
+//	     uvec ii = conv_to<uvec>::from(linspace(0,mzmax-1,mzmax));
+//
+//	     for (unsigned int k=0; k<dim; k++){
+//
+//	         vec sj = ss1.submat(0,k,size(ss1,0)-1,k);
+//	         ss1.submat(0,k,size(ss1,0)-1,k) = ddr(ii);
+//	         ddr(ii) = prod(ss1,1);
+//	         ss1.submat(0,k,size(ss1,0)-1,k) = sj;
+//	         ii = ii + mzmax;
+//
+//	      }
+//
+//	      mat ddr1 = reshape(ddr,mzmax,dim);
+//	      vec correlation  = join_cols(ddr1.submat(0,i,mzmax-1,i),30*pow(theta(i),2)*(ones<vec>(m)+mu));
+//	      sp_mat SR1(conv_to<umat>::from(location1.t()),correlation.t());
+//	      correlationMatrix.submat((i+1)*m,(i+1)*m,(i+2)*m-1,(i+2)*m-1) = SR1;
+//
+//	     }
 
-	     vec ddr = zeros(mn);
 
-	     if  (!i1.is_empty())
-	          ddr(i1) = -(-30 + 210*xi(i1) - 585.0/2*pow(xi(i1),2)) * pow(theta(i),2);
+	 for (unsigned int j=0; j<dim; j++){
 
-	     if  (!i2.is_empty())
-	          ddr(i2) = -(20- 40*xi(i2) + 20.0*pow(xi(i2),2)) * pow(theta(i),2);
+		     vec ddr = zeros(mzmax);
+		     vec xj = abs(d.col(j))*theta(j);
 
-	     uvec ii = conv_to<uvec>::from(linspace(0,mzmax-1,mzmax));
+		     uvec i3 = find(xj <= 0.4);
+		     uvec i4 = find(0.4 < xj && xj < 1);
 
-	     for (unsigned int k=0; k<dim; k++){
+		     if  (!i3.is_empty())
+		          ddr(i3) = -(-30 + 210*xj(i3) - 585.0/2*pow(xj(i3),2)) * pow(theta(j),2);
 
-	         vec sj = ss1.submat(0,k,size(ss1,0)-1,k);
-	         ss1.submat(0,k,size(ss1,0)-1,k) = ddr(ii);
-	         ddr(ii) = prod(ss1,1);
-	         ss1.submat(0,k,size(ss1,0)-1,k) = sj;
-	         ii = ii + mzmax;
+		     if  (!i4.is_empty())
+		          ddr(i4) = -(20- 40*xj(i4) + 20.0*pow(xj(i4),2)) * pow(theta(j),2);
 
-	      }
+		      vec sj = ss1.col(j);
 
-	      mat ddr1 = reshape(ddr,mzmax,dim);
-	      vec correlation  = join_cols(ddr1.submat(0,i,mzmax-1,i),30*pow(theta(i),2)*(ones<vec>(m)+mu));
-	      sp_mat SR1(conv_to<umat>::from(location1.t()),correlation.t());
-	      correlationMatrix.submat((i+1)*m,(i+1)*m,(i+2)*m-1,(i+2)*m-1) = SR1;
+		      ss1.col(j) = ddr;
 
-	     }
+		      ddr = prod(ss1,1);
+
+		      ss1.col(j) = sj;
+
+		      vec correlation  = join_cols(ddr,30*pow(theta(j),2)*(ones<vec>(m)+mu));
+
+		      sp_mat SR1(conv_to<umat>::from(location1.t()),correlation.t());
+
+		      correlationMatrix.submat((j+1)*m,(j+1)*m,(j+2)*m-1,(j+2)*m-1) = SR1;
+
+	   }
 
 		for (unsigned int i=0; i<dim; i++){
 			for (unsigned int j=i+1; j<dim; j++){
 
-				vec sj = ss1.submat(0,j,size(ss1,0)-1,j);
-				vec si = ss1.submat(0,i,size(ss1,0)-1,i);
-				ss1.submat(0,j,size(ss1,0)-1,j) = dr.rows(j*mzmax,(j+1)*mzmax-1);
-				ss1.submat(0,i,size(ss1,0)-1,i) = -dr.rows(i*mzmax,(i+1)*mzmax-1);
+//				vec sj = ss1.submat(0,j,size(ss1,0)-1,j);
+//				vec si = ss1.submat(0,i,size(ss1,0)-1,i);
+//				ss1.submat(0,j,size(ss1,0)-1,j) = dr.rows(j*mzmax,(j+1)*mzmax-1);
+//				ss1.submat(0,i,size(ss1,0)-1,i) = -dr.rows(i*mzmax,(i+1)*mzmax-1);
+//				vec dr = prod(ss1,1);
+//				ss1.submat(0,j,size(ss1,0)-1,j) = sj;
+//				ss1.submat(0,i,size(ss1,0)-1,i) = si;
+
+				vec sj = ss1.col(j);
+				vec si = ss1.col(i);
+
+				ss1.col(j) = dr.rows(j*mzmax,(j+1)*mzmax-1);
+				ss1.col(i) = -dr.rows(i*mzmax,(i+1)*mzmax-1);
+
 				vec dr = prod(ss1,1);
-				ss1.submat(0,j,size(ss1,0)-1,j) = sj;
-				ss1.submat(0,i,size(ss1,0)-1,i) = si;
+
+				ss1.col(j) = sj;
+				ss1.col(i) = si;
+
 				vec correlation = join_cols(dr,zeros<vec>(m));
 				sp_mat SR(conv_to<umat>::from(location1.t()),correlation.t());
 			    correlationMatrix.submat((i+1)*m,(j+1)*m,(i+2)*m-1,(j+2)*m-1) = SR + SR.t()-diagmat(SR);
+
 			}
 		}
 
@@ -248,10 +299,17 @@ mat Correlationfunction::corrbiquadspline_gekriging_vec(mat &xtest, mat &X, vec 
 	vec dr1 = dr;
 
 	for(unsigned int j=0; j<dim;j++){
-	   vec sj = ss1.submat(0,j,size(ss1,0)-1,j);
-	   ss1.submat(0,j,size(ss1,0)-1,j) = dr1(ii);
+
+//	   vec sj = ss1.submat(0,j,size(ss1,0)-1,j);
+//	   ss1.submat(0,j,size(ss1,0)-1,j) = dr1(ii);
+//	   dr1(ii) = prod(ss1,1);
+//	   ss1.submat(0,j,size(ss1,0)-1,j) = sj;
+
+	   vec sj = ss1.col(j);
+	   ss1.col(j) = dr1(ii);
 	   dr1(ii) = prod(ss1,1);
-	   ss1.submat(0,j,size(ss1,0)-1,j) = sj;
+	   ss1.col(j) = sj;
+
 	   ii = ii + mzmax;
    }
 

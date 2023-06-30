@@ -47,6 +47,7 @@ class Optimizer {
 
 	vec lowerBounds;
 	vec upperBounds;
+	vec baseline;      // Design parameter baseline
 
 	vec lowerBoundsForEIMaximization;
 	vec upperBoundsForEIMaximization;
@@ -67,7 +68,7 @@ class Optimizer {
 	bool ifObjectFunctionIsSpecied = false;
 	bool ifSurrogatesAreInitialized = false;
 	bool isHistoryFileInitialized = false;
-
+	bool ifBaseLineSet = false;
 	bool IfinitialValueForObjFunIsSet= false;
 
 	char* workpath;
@@ -145,6 +146,9 @@ public:
 	void setBoxConstraints(std::string filename="BoxConstraints.csv");
 	void setBoxConstraints(double lb, double ub);
 	void setBoxConstraints(vec lb, vec ub);
+
+	void setBaseLine(vec baseline);
+
 	void setFileNameDesignVector(std::string filename);
 
 	void setDisplayOn(void);

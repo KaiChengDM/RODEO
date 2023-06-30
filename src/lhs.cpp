@@ -380,7 +380,11 @@ bool LHSSamples::testIfSamplesAreTooClose(void){
 
 }
 
+void LHSSamples::setBaseline(vec base_line){
 
+	samples.row(0) = base_line.t();
+
+}
 
 void LHSSamples::saveSamplesToCSVFile(std::string fileName){
 
@@ -388,6 +392,7 @@ void LHSSamples::saveSamplesToCSVFile(std::string fileName){
 	saveMatToCVSFile(samples,fileName);
 
 }
+
 
 void LHSSamples::visualize(void){
 

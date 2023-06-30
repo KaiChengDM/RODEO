@@ -104,7 +104,7 @@ void GEKModel::initializeSurrogateModel(void){
 
 	numberOfHyperParameters = dim;
 
-	GEK_weights = zeros<vec>(numberOfHyperParameters);
+	GEK_weights = ones<vec>(numberOfHyperParameters);
 
 	/* regularization term */
 
@@ -299,6 +299,7 @@ double GEKModel::likelihood_function(vec theta){
 
 
 	vec r = computeCorrelationVectorDot(x);
+
 #if 0
 	printVector(r,"r");
 	cout<<"beta0 ="<<beta0<<"\n";
@@ -804,6 +805,16 @@ double GEKModel::computeCorrelation(rowvec x_i, rowvec x_j, vec theta) const {
 
 } */ /* end of compute_R_matrix_GEK */
 
+void GEKModel::computeCorrelationMatrixDot() {
+
+	unsigned int dim             = data.getDimension();
+	unsigned int numberOfSamples = data.getNumberOfSamples();
+
+	mat X     = data.getInputMatrix();
+	vec theta = GEK_weights;
+
+	correlationMatrixDot = correlationfunction.corrbiquadspline_gekriging(X,theta);
+}
 
 vec GEKModel::computeCorrelationVectorDot(rowvec x) const{
 
@@ -1106,10 +1117,12 @@ void GEKModel::boxmin(vec hyper_l, vec hyper_u, int num){
 
 	  int kmax;
 
-	  if (dim < 2)
-	      { kmax = 2;}
-      else
-	      { kmax = std::min(dim,5);}
+//	  if (dim < 2)
+//	      { kmax = 2;}
+//      else
+//	      { kmax = std::min(dim,5);}
+
+	  kmax = std::max(dim,5);
 
 	  for (unsigned int k = 0; k < kmax; k++){  // Iterate for kmax times
 

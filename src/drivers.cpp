@@ -95,7 +95,8 @@ RoDeODriver::RoDeODriver(){
 
 	configKeys.add(ConfigKey("NUMBER_OF_TRAINING_ITERATIONS","int") );
 
-	configKeys.add(ConfigKey("OUTPUT_DIMENSION","int") ); // for vector output
+	configKeys.add(ConfigKey("OUTPUT_DIMENSION","int") );          // for vector output
+	configKeys.add(ConfigKey("BASELINE","doubleVector") );         // design parameter baseline (for comparison purpose)
 
 	configKeys.add(ConfigKey("PROBLEM_TYPE","string") );
 	configKeys.add(ConfigKey("PROBLEM_NAME","string") );
@@ -1159,7 +1160,14 @@ Optimizer RoDeODriver::setOptimizationStudy(void) {
 	vec lb = configKeys.getConfigKeyVectorDoubleValue("LOWER_BOUNDS");
 	vec ub = configKeys.getConfigKeyVectorDoubleValue("UPPER_BOUNDS");
 
+	vec baseline = configKeys.getConfigKeyVectorDoubleValue("BASELINE");
+
 	optimizationStudy.setBoxConstraints(lb,ub);
+
+	if(!baseline.empty()){
+		optimizationStudy.setBaseLine(baseline);
+	}
+
 
 	std::string dvFilename = configKeysObjectiveFunction.getConfigKeyStringValue("DESIGN_VECTOR_FILE");
 

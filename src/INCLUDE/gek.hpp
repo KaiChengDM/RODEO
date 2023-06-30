@@ -71,9 +71,7 @@ private:
 	double computedR_dxj(rowvec x_i, rowvec x_j,int k) const;
 	double computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const;
 	double computedR_dxi(rowvec x_i, rowvec x_j,int k) const;
-	double likelihood_function(vec theta);       // Modified by Kai
 
-	void computeCorrelationMatrixDot(vec theta);
 	vec computeCorrelationVectorDot(rowvec x) const;
 
 	/* Hooke Jeeves algorithm parameter*/
@@ -108,13 +106,17 @@ public:
 	void setNameOfHyperParametersFile(std::string);
 	void setNumberOfTrainingIterations(unsigned int);
 
-
 	void initializeSurrogateModel(void);
 	void printSurrogateModel(void) const;
 	void printHyperParameters(void) const;
 	void saveHyperParameters(void) const;
 	void loadHyperParameters(void);
 	void train(void);
+
+	void computeCorrelationMatrixDot();
+
+	double likelihood_function(vec theta);
+
 	double interpolateWithGradients(rowvec x) const ;
 	double interpolate(rowvec x) const ;
 	vec interpolate_vec(rowvec x) const ;

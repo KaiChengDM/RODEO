@@ -239,6 +239,15 @@ void Optimizer::setBoxConstraints(vec lb, vec ub){
 
 }
 
+void Optimizer::setBaseLine(vec base_line){
+
+	assert(base_line.size()>0);
+	assert(base_line.size() == lowerBounds.size());
+	assert(base_line.size() == upperBounds.size());
+
+	baseline = base_line;
+	ifBaseLineSet = true;
+}
 
 void Optimizer::setDisplayOn(void){
 
@@ -393,8 +402,13 @@ void Optimizer::estimateConstraints(CDesignExpectedImprovement &design) const{
         	 design.probability_con(constraintIt) = 0;
 		}
 
-		constraintIt++;
+//		if (design.probability_con(constraintIt)< 10e-15) {
+//
+//			 cout << "The " << constraintIt << "-th constraint cannot be satisfied. It may not well-defined ! " << endl;
+//
+//		}
 
+		constraintIt++;
 
 	}
 }
@@ -1256,7 +1270,7 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		optimizedDesign.generateRandomDesignVector(lowerBoundsForEIMaximization, upperBoundsForEIMaximization); // give a random initial value
 
-		for(unsigned int k=0; k< 5; k++){                                     // repeat for 5 times
+		for(unsigned int k=0; k < 5; k++){                                     // repeat for 5 times
 
 			  findTheMostPromisingDesign();
 
@@ -1271,9 +1285,16 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		cout << "The most promising design parameter has been found... " << endl;
 
-		if (optimizedDesign.valueExpectedImprovement < 10e-15){
+		if (optimizedDesign.valueExpectedImprovement < 10e-5){
 
-			cout << "The constraint function may be not well-defined. Please check it !" << endl;
+				cout << "Current improvement is marginal, do you want to continue ?" << endl;
+
+		 }
+
+		if (optimizedDesign.totalProbabilityConSatisfied < 10e-15){
+
+			//cout << "The constraint may not be well-defined. " << endl;
+			cout << "The constraint cannot be satisfied. It may not well-defined ! " << endl;
 
 		}
 
@@ -1486,6 +1507,12 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 
 		LHSSamples DoE(dimension, lowerBounds, upperBounds, howManySamples);
 
+		if (ifBaseLineSet){
+
+			DoE.setBaseline(baseline);                              // set the design parameter baseline as the first sample
+
+		}
+
 		std::string filename= this->name + "_samples.csv";
 		DoE.saveSamplesToCSVFile(filename);                     // export input samples
 		sampleCoordinates = DoE.getSamples();
@@ -1513,6 +1540,7 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 		}
 
 		rowvec dv = sampleCoordinates.row(sampleID);
+
 		Design currentDesign(dv);
 
 		currentDesign.setNumberOfConstraints(numberOfConstraints);   // constraint function number
@@ -1599,7 +1627,7 @@ void Optimizer::boxmin(mat dv, vec dv_l, vec dv_u){
 
 	  int dim = dimension;
 
-	  int kmax = std::min(dim,10);
+	  int kmax = 10;
 
 	 /* if (dimension < 2)
 	      { kmax = 2;}

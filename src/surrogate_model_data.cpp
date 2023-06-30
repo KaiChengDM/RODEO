@@ -485,7 +485,11 @@ void SurrogateModelData::normalizeSampleInputMatrix(void){
 	assert(X.n_rows ==  numberOfSamples);
 	assert(X.n_cols ==  dimension);
 
+	//cout <<  "box dim "<< boxConstraints.getDimension() << endl;
+	//cout <<  "dim " << dimension << endl;
+
 	assert(boxConstraints.getDimension() == dimension);
+
 	assert(boxConstraints.areBoundsSet());
 
 	outputToScreen.printMessage("Normalizing and scaling the sample input matrix...");

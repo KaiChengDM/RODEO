@@ -42,7 +42,7 @@ public:
 
 	rowvec dv;
 	double valueExpectedImprovement;
-	double totalProbabilityConSatisfied = 1;  // total probability of all constraint is satisfied
+	double totalProbabilityConSatisfied = 1;         // total probability of all constraint is satisfied
 	double objectiveFunctionValue;
 	rowvec constraintValues;
 
@@ -50,7 +50,7 @@ public:
 	std::vector<double> constraintExtremumValues;    // extremum of vector constraint
 	std::vector<long> constraint_length;             // for vector constraint
 
-	rowvec probability_con;                           // Probability of satisfying the constraint
+	rowvec probability_con;                          // Probability of satisfying the constraint
 
 	unsigned int dim;
 

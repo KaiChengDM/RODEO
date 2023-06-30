@@ -30,53 +30,273 @@
  */
 
 #include "gek.hpp"
-#include "gek_test.hpp"
+//#include "gek_test.hpp"
+#include "sgek.hpp"
 #include "auxiliary_functions.hpp"
 #include "test_functions.hpp"
 #include "polynomials.hpp"
 #include <vector>
 #include <armadillo>
+#include<gtest/gtest.h>
 
 
+TEST(testGEK, testGEKLikelihood){
+
+	mat samples(20,5);
+
+		/* we construct first test data using the function x1*x1 + x2 * x2 */
+	for (unsigned int i=0; i<samples.n_rows; i++){
+
+		rowvec x(5);
+
+		x(0) = generateRandomDouble(-1.0,2.0);
+		x(1) = generateRandomDouble(-1.0,2.0);
+
+		x(2) = x(0)*x(0) + x(1)*x(1);
+
+		x(3) = 2*x(0);
+		x(4) = 2*x(1);
+
+		samples.row(i) = x;
+
+	}
+
+	vec lb(2); lb.fill(-1.0);
+	vec ub(2); ub.fill(2.0);
+
+	saveMatToCVSFile(samples,"GEKTest.csv");
+
+	GEKModel testModel("GEKTest");
+
+	testModel.setGradientsOn();
+	testModel.readData();
+	testModel.setBoxConstraints(lb, ub);
+
+	testModel.normalizeData();
+	testModel.initializeSurrogateModel();
+	testModel.updateAuxilliaryFields();
+
+	vec theta;  theta.ones(2);
+
+	double likelihood = testModel.likelihood_function(theta);
+
+	cout << "GEK likelihood is " <<  likelihood << endl;
+
+	SGEKModel testModel1("GEKTest");
+
+	testModel1.setGradientsOn();
+	testModel1.readData();
+	testModel1.setBoxConstraints(lb, ub);
+
+	testModel1.normalizeData();
+	testModel1.initializeSurrogateModel();
+	testModel1.updateAuxilliaryFields();
+
+	vec beta;  beta.ones(3);
+
+	double likelihood1 = testModel1.likelihood_function(beta);
+
+	cout << "SGEK likelihood is " <<  likelihood1 << endl;
+
+}
+
+TEST(testGEK, testInSampleErrorCloseToZeroWithoutTraining){
+
+	mat samples(20,5);
+
+	/* we construct first test data using the function x1*x1 + x2 * x2 */
+	for (unsigned int i=0; i<samples.n_rows; i++){
+
+		rowvec x(5);
+
+		x(0) = generateRandomDouble(-1.0,2.0);
+		x(1) = generateRandomDouble(-1.0,2.0);
+
+		x(2) = x(0)*x(0) + x(1)*x(1);
+
+		x(3) = 2*x(0);
+		x(4) = 2*x(1);
+
+		samples.row(i) = x;
+
+	}
+
+	vec lb(2); lb.fill(-1.0);
+	vec ub(2); ub.fill(2.0);
+
+	saveMatToCVSFile(samples,"GEKTest.csv");
+
+	GEKModel testModel("GEKTest");
+
+	testModel.setGradientsOn();
+	testModel.readData();
+	testModel.setBoxConstraints(lb, ub);
+
+	testModel.normalizeData();
+	testModel.initializeSurrogateModel();
+	testModel.updateAuxilliaryFields();
+
+	double mean_y = testModel.readOutputMean();
+	double std_y =  testModel.readOutputStd();
+
+	rowvec xp(2); xp(0) = samples(0,0); xp(1) = samples(0,1);
+
+	rowvec xpnorm = normalizeRowVector(xp,lb,ub);
+
+	double ftilde = testModel.interpolate(xpnorm);
+
+	ftilde = ftilde *std_y+mean_y;
+
+	double error = fabs(ftilde - samples(0,2));
+
+	EXPECT_LT(error, 10E-10);
+
+	rowvec xp1(2); xp1(0) = samples(0,0)+10E-5; xp1(1) = samples(0,1);
+	rowvec xp2(2); xp2(0) = samples(0,0)-10E-5; xp2(1) = samples(0,1);
+
+	rowvec xpnorm1 = normalizeRowVector(xp1,lb,ub);
+
+	double ftilde1 = testModel.interpolate(xpnorm1);
+
+	ftilde1 = ftilde1 *std_y+mean_y;
+
+	rowvec xpnorm2 = normalizeRowVector(xp2,lb,ub);
+
+	double ftilde2 = testModel.interpolate(xpnorm2);
+
+	ftilde2 = ftilde2 *std_y+mean_y;
+
+    error = fabs((ftilde1-ftilde2)/2/10E-5 - samples(0,3));  // validate the partial derivative
+
+	EXPECT_LT(error, 10E-4);
+
+}
 
 
+TEST(testGEK, testInSampleErrorCloseToZeroAfterTraining){
+
+	mat samples(20,5);
+
+	/* we construct first test data using the function x1*x1 + x2 * x2 */
+	for (unsigned int i=0; i<samples.n_rows; i++){
+
+		rowvec x(5);
+
+		x(0) = generateRandomDouble(-1.0,2.0);
+		x(1) = generateRandomDouble(-1.0,2.0);
+
+		x(2) = x(0)*x(0) + x(1)*x(1);
+
+		x(3) = 2*x(0);
+		x(4) = 2*x(1);
+
+		samples.row(i) = x;
+
+	}
+
+	vec lb(2); lb.fill(-1.0);
+	vec ub(2); ub.fill(2.0);
+
+	saveMatToCVSFile(samples,"GEKTest.csv");
+
+	GEKModel testModel("GEKTest");
+
+	testModel.setGradientsOn();
+	testModel.readData();
+	testModel.setBoxConstraints(lb, ub);
+
+	testModel.normalizeData();
+	testModel.initializeSurrogateModel();
+
+	testModel.train();
+	testModel.updateAuxilliaryFields();
+
+	double mean_y = testModel.readOutputMean();
+	double std_y =  testModel.readOutputStd();
+
+	rowvec xp(2); xp(0) = samples(0,0); xp(1) = samples(0,1);
+
+	rowvec xpnorm = normalizeRowVector(xp,lb,ub);
+
+	double ftilde = testModel.interpolate(xpnorm);
+
+	ftilde = ftilde *std_y+mean_y;
+
+	double error = fabs(ftilde - samples(0,2));
+
+	double likelihood = testModel.getOptimalLikelihood();
+
+	cout << "GEK likelihood is " <<likelihood << endl;
+
+	EXPECT_LT(error, 10E-6);
+
+	rowvec xp1(2); xp1(0) = samples(0,0)+10E-5; xp1(1) = samples(0,1);
+	rowvec xp2(2); xp2(0) = samples(0,0)-10E-5; xp2(1) = samples(0,1);
+
+	rowvec xpnorm1 = normalizeRowVector(xp1,lb,ub);
+
+	double ftilde1 = testModel.interpolate(xpnorm1);
+
+	ftilde1 = ftilde1 *std_y+mean_y;
+
+	rowvec xpnorm2 = normalizeRowVector(xp2,lb,ub);
+
+	double ftilde2 = testModel.interpolate(xpnorm2);
+
+	ftilde2 = ftilde2 *std_y+mean_y;
+
+    error = fabs((ftilde1-ftilde2)/2/10E-5 - samples(0,3));  // validate the partial derivative
+
+    cout << " Error of first partial derivative is " << error << endl;
+
+	EXPECT_LT(error, 10E-4);
+
+	// test SGE-Kriging
+
+	SGEKModel testModel1("GEKTest");
+
+	testModel1.setGradientsOn();
+	testModel1.readData();
+	testModel1.setBoxConstraints(lb, ub);
+
+	testModel1.normalizeData();
+	testModel1.initializeSurrogateModel();
+
+	testModel1.train();
+	testModel1.updateAuxilliaryFields();
+
+	mean_y = testModel1.readOutputMean();
+	std_y =  testModel1.readOutputStd();
+
+	ftilde = testModel1.interpolate(xpnorm);
+
+	ftilde = ftilde *std_y+mean_y;
+
+	error = fabs(ftilde - samples(0,2));
+
+	double likelihood1 = testModel1.getOptimalLikelihood();
+
+	cout << "SGEK likelihood is " <<likelihood1 << endl;
+
+	EXPECT_LT(error, 10E-6);
+
+	ftilde1 = testModel1.interpolate(xpnorm1);
+
+	ftilde1 = ftilde1 *std_y+mean_y;
+
+	ftilde2 = testModel1.interpolate(xpnorm2);
+
+	ftilde2 = ftilde2 *std_y+mean_y;
+
+	error = fabs((ftilde1-ftilde2)/2/10E-5 - samples(0,3));  // validate the partial derivative
+
+	cout << " Error of first partial derivative is " << error << endl;
+
+	EXPECT_LT(error, 10E-4);
+
+}
 
 
-
-//void testGEKcalculateRDot(void){
-//
-//	cout<<__func__<<"\n";
-//	int dim = 2;
-//	int N =  generateRandomInt(5,10);
-//
-//	generateRandomTestAndValidationDataForGradientModels(dim,N);
-//
-//	GEKModel testModel("testData");
-//	testModel.initializeSurrogateModel();
-//	testModel.GEK_weights.fill(1.0);
-//	testModel.printSurrogateModel();
-//	testModel.computeCorrelationMatrixDot();
-//
-//	printMatrix(testModel.correlationMatrixDot,"correlationMatrixDot");
-//
-//
-//
-//}
-//
-//void testGEKTrain(void){
-//
-//	cout<<__func__<<":";
-//	int dim = 6;
-//	int N =  generateRandomInt(10,20);
-//
-//	generateRandomTestAndValidationDataForGradientModels(dim,N);
-//
-//	GEKModel testModel("testData");
-//	testModel.train();
-//
-//
-//
-//}
 //
 //
 //

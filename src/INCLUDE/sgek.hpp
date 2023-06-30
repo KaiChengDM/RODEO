@@ -79,10 +79,9 @@ private:
 	double computedR_dxj(rowvec x_i, rowvec x_j,int k) const;
 	double computedR_dxi_dxj(rowvec x_i, rowvec x_j, int l,int k) const;
 	double computedR_dxi(rowvec x_i, rowvec x_j,int k) const;
-	double likelihood_function(vec alpha);
-	void original_likelihood_function(vec theta);
+
 	void slicing(unsigned int snum);
-	void computeCorrelationMatrixDot(vec theta);
+
 	vec computeCorrelationVectorDot(rowvec x) const;
 
 	/* Added by Kai*/
@@ -94,6 +93,7 @@ private:
 
     vec hyper_cur;
 	vec hyper_par;
+	vec hyper_optimal;
 
 	vec increment;
 	uvec ind_increment;
@@ -106,6 +106,7 @@ private:
 	int dim_a;
 
 	double likelihood_cur;
+	double likelihood_optimal;
 
 public:
 
@@ -124,6 +125,11 @@ public:
 	void saveHyperParameters(void) const;
 	void loadHyperParameters(void);
 	void train(void);
+
+	void computeCorrelationMatrixDot(vec theta);
+	double likelihood_function(vec alpha);
+	double original_likelihood_function(vec theta);
+
 	double interpolateWithGradients(rowvec x) const ;
 	double interpolate(rowvec x) const ;
 	vec interpolate_vec(rowvec x) const ;
@@ -161,6 +167,7 @@ public:
     vec getTheta(void) const;
     vec getAlpha(void) const;
     double getLikelihood(void) const;
+    double getOptimalLikelihood(void) const;
 
 	/* test functions */
 

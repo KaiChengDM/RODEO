@@ -710,6 +710,8 @@ TEST(testDriver, testrunDoE3){
 	double err = fabs(resultExpected- firstRowOfResults(2));
 	EXPECT_LT(err,10E-08);
 
+	// abort();
+
 	mat resultsConstraint1;
 	resultsConstraint1.load("Constraint1.csv",csv_ascii);
 	//	resultsConstraint1.print();
