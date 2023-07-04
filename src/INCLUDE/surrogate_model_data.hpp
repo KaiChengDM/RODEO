@@ -50,20 +50,22 @@ private:
 	unsigned int numberOfTestSamples = 0;
 	unsigned int dimension = 0;
 	unsigned int constraintLength = 0;
+    unsigned int effectivedimension = 0;   // effective dimension after dimension reduction
 
 	bool ifDataHasGradients = false;
 	bool ifDataIsNormalized = false;
-	bool ifVectorOutput = false;      // for vector output
+	bool ifVectorOutput = false;           // for vector output
 	bool ifOutputIsNormalized= false;
+
 
 	mat rawData;
 	mat X;
 	mat Xraw;
-
+    mat Xr;              // Input matrix after dimension reduction
 	mat gradient;
+	mat y_vec;           // for vector output
 
 	vec y;
-    mat y_vec;                       // for vector output
 
     double mean_y = 0;
 	double std_y = 1;

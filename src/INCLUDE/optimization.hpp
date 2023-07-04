@@ -113,7 +113,7 @@ public:
 	unsigned int maxNumberOfSamples = 0;
 	unsigned int howOftenTrainModels = 10; /* train surrogates in every 10 iteration */
 
-	std::string modelType; // Modified by Kai
+	std::string modelType;
 
 	unsigned int sampleDim;
 
@@ -126,7 +126,7 @@ public:
 
 	Optimizer();
 
-	Optimizer(std::string ,int, std::string = "minimize");
+	Optimizer(std::string ,int, std::string,int,bool);
 
 	bool checkSettings(void) const;
 	void print(void) const;

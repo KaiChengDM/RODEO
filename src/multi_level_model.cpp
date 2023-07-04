@@ -693,9 +693,6 @@ void MultiLevelModel::bindErrorModel(void){
 }
 
 
-
-
-
 mat MultiLevelModel::getRawDataHighFidelity(void) const{
 
 	assert(NHiFi>0);

@@ -55,14 +55,24 @@ using namespace arma;
 
 // Optimizer::Optimizer(){};
 
-Optimizer::Optimizer(std::string nameTestcase, int numberOfOptimizationParams, std::string problemType){
+Optimizer::Optimizer(std::string nameTestcase, int numberOfOptimizationParams, std::string problemType, int numberOfNormalDimConstraints, bool ifObjectiveDimReduction){
 
 	/* RoDeO does not allow problems with too many optimization parameters */
 
-	if(numberOfOptimizationParams > 300){
+	if(numberOfOptimizationParams > 100 ){
 
-		std::cout<<"ERROR: Problem dimension of the optimization is too large!"<<std::endl;
-		abort();
+
+	    if (!ifObjectiveDimReduction){
+
+	    	 std::cout<<"ERROR: Objective function dimension is too large, please use dimension reduction !"<<std::endl;
+	    	 abort();
+
+	    }else if(numberOfNormalDimConstraints>0) {
+
+	    	 std::cout<<"ERROR: Constraint function dimension is too large, please use  dimension reduction for all constraints !"<<std::endl;
+	    	 abort();
+
+	    }
 
 	}
 
@@ -247,6 +257,7 @@ void Optimizer::setBaseLine(vec base_line){
 
 	baseline = base_line;
 	ifBaseLineSet = true;
+
 }
 
 void Optimizer::setDisplayOn(void){
@@ -1514,7 +1525,7 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 		}
 
 		std::string filename= this->name + "_samples.csv";
-		DoE.saveSamplesToCSVFile(filename);                     // export input samples
+		DoE.saveSamplesToCSVFile(filename);                           // export input samples
 		sampleCoordinates = DoE.getSamples();
 	}
 	else{

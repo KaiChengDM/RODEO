@@ -53,6 +53,7 @@ public:
 	std::string designVectorFilename;
 	std::string outputValueFilename;
 	std::string outputGradFilename;
+	std::string dimensionReduction;
 
 	std::string marker;
 	std::string markerForGradient;
@@ -77,11 +78,14 @@ public:
 	int ID_normal_constraint=-1;
 	int ID_gradient_constraint=-1;
 	int ID_nongradient_constraint=-1;
+	int ID_dimention_reduction_constraint=-1;
+	int ID_dimention_normal_constraint=-1;
 
 	bool ifGradient = false;
 	bool ifGradientLowFi = false;
 	bool ifDefined = false;
-    bool if_vector_constraint = false;   // Created by Kai. For vector field constraint, e.g., f(t,x) > 0, for all t in [0,T].
+    bool if_vector_constraint = false;   // for vector field constraint, e.g., f(t,x) > 0, for all t in [0,T].
+    bool ifDimensionReduction = false;   // for dimension reduction
 
 	ConstraintDefinition(std::string, std::string, double);
 	ConstraintDefinition(std::string);

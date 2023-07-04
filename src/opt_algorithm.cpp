@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <opt_algorithm.hpp>
 #include <string>
 #include <stdlib.h>
 #include <iostream>
@@ -31,12 +32,12 @@
 #include "auxiliary_functions.hpp"
 #include "kriging_training.hpp"
 #include "aggregation_model.hpp"
-#include "hooke_jeeves.hpp"
 #include "Rodeo_macros.hpp"
 #include "Rodeo_globals.hpp"
 #include "test_functions.hpp"
 #include "optimization.hpp"
 #include "lhs.hpp"
+
 #define ARMA_DONT_PRINT_ERRORS
 #include <armadillo>
 
@@ -46,7 +47,7 @@ using namespace arma;
 Hooke_Jeeves::Hooke_Jeeves(){};
 
 
-double Hooke_Jeeves::evaluate(vec dv){
+double Hooke_Jeeves::objectiveFunction(vec dv){
 
 	return 0;                                       // Need to insert the objective function
 
@@ -126,7 +127,7 @@ void Hooke_Jeeves::start(vec dv_in1, vec dv_lb, vec dv_ub, int kk){
 
 	  dv_cur.col(kk) = dv_in1;
 
-	  obj_cur(kk) = evaluate(dv_cur.col(kk));
+	  obj_cur(kk) = objectiveFunction(dv_cur.col(kk));
 
 	  numberOfIteration = 0;
       hyperoptimizationHistory = zeros(dim+2,200*dim);
@@ -164,7 +165,7 @@ void Hooke_Jeeves::explore(vec dv_1, double obj_1, int kk){
     	   dv_par(j) = std::min(dv_ub(j),dv_cur(j,kk)*DD);
        }
 
-       obj = evaluate(dv_par);
+       obj = objectiveFunction(dv_par);
        numberOfIteration++;
        hyperoptimizationHistory.col(numberOfIteration)= join_cols(dv_par, vec {obj, 2});
 
@@ -177,7 +178,7 @@ void Hooke_Jeeves::explore(vec dv_1, double obj_1, int kk){
 
     	   if (!atbd) {
     		    dv_par(j) = std::max(dv_lb(j),dv_cur(j,kk)/DD);
-    	        obj = evaluate(dv_par);
+    	        obj = objectiveFunction(dv_par);
 
     	        numberOfIteration++;
     	        hyperoptimizationHistory.col(numberOfIteration) = join_cols(dv_par, vec {obj, 2});
@@ -218,7 +219,7 @@ void Hooke_Jeeves::move(vec dv_old,vec dv_new, double obj_new, int kk){
         while (rept){
 
 		   dv_par = min(join_rows(dv_ub,max(join_rows(dv_lb,dv_new % v),1)),1);
-		   obj = evaluate(dv_par);
+		   obj = objectiveFunction(dv_par);
 		   numberOfIteration++;
 		   hyperoptimizationHistory.col(numberOfIteration)= join_cols(dv_par, vec { obj, 3});
 
@@ -263,6 +264,8 @@ double Hooke_Jeeves::getOptimal_obj(void){
 	return obj_optimal;
 }
 
+
+Genetic_Algorithm::Genetic_Algorithm(){};
 
 
 

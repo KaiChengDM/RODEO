@@ -229,13 +229,13 @@ void GEKModel::train(void){
 	vec hyper_l = 0.001*dim*ones(dim,1);
 	vec hyper_u = 10*dim*ones(dim,1);
 
-	num = 10;                       // Multiple starts
+	num = 10;                         // Multiple starts
 
 	clock_t start, finish;
 
 	start = clock();
 
-	boxmin(hyper_l,hyper_u,num);    // Hooke Jeeves algorithm for hyper-parameter optimization
+	boxmin(hyper_l,hyper_u,num);      // Hooke Jeeves algorithm for hyper-parameter optimization
 
 	finish = clock();
 

@@ -45,9 +45,7 @@ class SurrogateModel{
 
 protected:
 
-
 	unsigned int NTest = 0;
-
 
 	vec yTest;
 	mat yVectorTest;     // for vector output
@@ -55,7 +53,6 @@ protected:
 	mat XTest;
 
 	std::string name;
-
 
 	std::string hyperparameters_filename;
 
@@ -80,7 +77,8 @@ public:
 	bool ifDataIsRead = false;
 	bool ifNormalized = false;
 	bool ifHasTestData = false;
-	bool ifDataIsAssigned = false;  // for vector output
+	bool ifDataIsAssigned = false;      // for vector output
+	bool ifDimensionReduction = false;  // for dimension reduction
 
 	mat testResults;
 

@@ -21,18 +21,19 @@
  *
  */
 
-#ifndef HOOKE_JEEVES_HPP
-#define HOOKE_JEEVES_HPP
+#ifndef OPT_ALGORITHM_HPP
+#define OPT_ALGORITHM_HPP
 
 #include <armadillo>
 #include "objective_function.hpp"
 #include "constraint_functions.hpp"
 #include "random_functions.hpp"
 #include "optimization.hpp"
+// #include "Galgo.hpp"       // Genetic algorithm taken from https://github.com/olmallet81/GALGO-2.0
 
 using namespace arma;
 
-class Hooke_Jeeves {      // Hooke-Jeeves pattern search method for optimization
+class Hooke_Jeeves {        // Hooke-Jeeves pattern search method for optimization
 
    int num =1 ;
 
@@ -59,7 +60,6 @@ class Hooke_Jeeves {      // Hooke-Jeeves pattern search method for optimization
 
 public:
 
-
     Hooke_Jeeves();
 
     void boxmin(mat dv, vec dv_lb, vec dv_ub);
@@ -72,9 +72,35 @@ public:
     vec getOptimal_dv(void) ;
     double getOptimal_obj(void);
 
-    double evaluate(vec dv);
+    double objectiveFunction(vec dv);   // objective function
 
 };
+
+
+class Genetic_Algorithm {      //  Genetic Algorithm for optimization
+
+   int dim;
+
+   double obj_optimal;
+
+   const vec lowerBound;
+   const vec upperBound;
+
+   const int populationSize = 50;
+   const int maxIterations = 100;
+
+public:
+
+
+    Genetic_Algorithm();
+
+    double objectiveFunction(const vec & x);
+
+    void constraintFunction(vec & x, vec lowerBound, vec upperBound);
+
+
+};
+
 
 
 #endif

@@ -46,6 +46,7 @@
 class ObjectiveFunctionDefinition{
 
 public:
+
 	std::string name;
 	std::string designVectorFilename;
 
@@ -58,6 +59,7 @@ public:
 	std::string markerForGradient;
 	std::string surrogatetype;
 	std::string jsonFile;
+	std::string dimensionReduction;
 
 	/* These are required only for multi-level option */
 	std::string executableNameLowFi;
@@ -72,8 +74,8 @@ public:
 	bool ifGradient = false;
 	bool ifGradientLowFi = false;
 	bool ifDefined = false;
-	bool ifVectorOutput = false;    // for vector output
-
+	bool ifVectorOutput = false;        // for vector output
+    bool ifDimensionReduction = false;  // for dimension reduction
 
 	ObjectiveFunctionDefinition(std::string);
 	ObjectiveFunctionDefinition();
@@ -124,11 +126,11 @@ protected:
 	bool ifMarkerIsSet = false;
 	bool ifAdjointMarkerIsSet = false;
 
-
 	vec upperBounds;
 	vec lowerBounds;
 
     mat pod_basis;
+    mat as_basis;    // active subspace basis matrix
 
 	KrigingModel surrogateModel;
 	AggregationModel surrogateModelGradient;

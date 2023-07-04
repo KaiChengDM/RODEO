@@ -70,7 +70,9 @@ RoDeODriver::RoDeODriver(){
 	configKeysObjectiveFunction.add(ConfigKey("MARKER_FOR_GRADIENT","stringVector") );
 	configKeysObjectiveFunction.add(ConfigKey("NUMBER_OF_TRAINING_ITERATIONS","int") );
 	configKeysObjectiveFunction.add(ConfigKey("MULTILEVEL_SURROGATE","string") );
-	configKeysObjectiveFunction.add(ConfigKey("SURROGATE_OBJ","stringVector") );    // surrogate model for objective function
+	configKeysObjectiveFunction.add(ConfigKey("SURROGATE_OBJ","stringVector") );          // surrogate model for objective function
+	configKeysObjectiveFunction.add(ConfigKey("DIMENSION_REDUCTION","stringVector") );    // dimension reduction for objective function
+
 
 
 	/* Keywords for constraints */
@@ -87,8 +89,9 @@ RoDeODriver::RoDeODriver(){
 	configKeysConstraintFunction.add(ConfigKey("MARKER_FOR_GRADIENT","stringVector") );
 	configKeysConstraintFunction.add(ConfigKey("NUMBER_OF_TRAINING_ITERATIONS","int") );
 	configKeysConstraintFunction.add(ConfigKey("MULTILEVEL_SURROGATE","string") );
-	configKeysConstraintFunction.add(ConfigKey("SURROGATE_CON","stringVector") );       // surrogate model for constraint function
-	configKeysConstraintFunction.add(ConfigKey("VECTOR_FIELD_CON","stringVector") );    // for vector field constraint
+	configKeysConstraintFunction.add(ConfigKey("SURROGATE_CON","stringVector") );          // surrogate model for constraint function
+	configKeysConstraintFunction.add(ConfigKey("VECTOR_FIELD_CON","stringVector") );       // for vector field constraint
+	configKeysConstraintFunction.add(ConfigKey("DIMENSION_REDUCTION","stringVector") );    // dimension reduction for constraint function
 
 
 	/* Other keywords */
@@ -546,6 +549,7 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
 	std::string surrogatetype;
 	std::string vector_field_constraint;
 	std::string jsonFile;
+	std::string dimensionReduction;
 
 	configKeysConstraintFunction.parseString(inputString);
 
@@ -568,6 +572,8 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
 	surrogatetype = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("SURROGATE_CON",0);
 	vector_field_constraint= configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("VECTOR_FIELD_CON",0);
 	jsonFile = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("JSON_FILE",0);
+	dimensionReduction = configKeysConstraintFunction.getConfigKeyStringVectorValueAtIndex("DIMENSION_REDUCTION",0);
+
 
 	ConstraintDefinition result(definitionBuffer);
 
@@ -582,6 +588,8 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
 	result.surrogatetype = surrogatetype;
 	result.jsonFile = jsonFile;
 	result.ID = numberOfConstraints;
+	result.dimensionReduction = dimensionReduction;
+
 
 	numberOfConstraints++;
 
@@ -598,11 +606,18 @@ void RoDeODriver::parseConstraintDefinition(std::string inputString){
     }
 
 
-//	cout << "gradient is  " <<  gradient <<  endl;
-//	cout << "marker gradient is  " << markerGradient <<  endl;
-//	cout << "marker is  " << marker <<  endl;
-//	cout << "CON_VALUE_FILEis  " << outputValueFilename  <<  endl;
-//	cout << "CON_GRAD_FILEis  " << outputGradFilename  <<  endl;
+	if(checkIfOn(dimensionReduction)){
+
+			result.ID_dimention_reduction_constraint = numberOfDimReductionConstraints;
+			numberOfDimReductionConstraints++;
+			result.ifDimensionReduction = true;
+
+		}else{
+
+			result.ID_dimention_normal_constraint = numberOfNormalDimConstraints;
+			numberOfNormalDimConstraints++;
+
+		}
 
 	if(checkIfOn(gradient)){
 
@@ -680,6 +695,7 @@ void RoDeODriver::parseObjectiveFunctionDefinition(std::string inputString){
 	std::string markerGradient;
 	std::string surrogatetype;
 	std::string multilevel;
+	std::string dimensionReduction;
 
 	configKeysObjectiveFunction.parseString(inputString);
 
@@ -701,7 +717,8 @@ void RoDeODriver::parseObjectiveFunctionDefinition(std::string inputString){
 	marker =  configKeysObjectiveFunction.getConfigKeyStringVectorValueAtIndex("MARKER",0);
 	markerGradient = configKeysObjectiveFunction.getConfigKeyStringVectorValueAtIndex("MARKER_FOR_GRADIENT",0);
 	gradient = configKeysObjectiveFunction.getConfigKeyStringVectorValueAtIndex("GRADIENT",0);
-	surrogatetype = configKeysObjectiveFunction.getConfigKeyStringVectorValueAtIndex("SURROGATE_OBJ",0);  // Modified by Kai
+	surrogatetype = configKeysObjectiveFunction.getConfigKeyStringVectorValueAtIndex("SURROGATE_OBJ",0);
+	dimensionReduction = configKeysObjectiveFunction.getConfigKeyStringVectorValueAtIndex("DIMENSION_REDUCTION",0);
 
 
 	objectiveFunction.name = name;
@@ -714,11 +731,19 @@ void RoDeODriver::parseObjectiveFunctionDefinition(std::string inputString){
 	objectiveFunction.markerForGradient = markerGradient;
 	objectiveFunction.surrogatetype = surrogatetype;
 	objectiveFunction.jsonFile = jsonFile;
-
+	objectiveFunction.dimensionReduction = dimensionReduction;
 
 	if(checkIfOn(gradient)){
 
 		objectiveFunction.ifGradient = true;
+
+	}
+
+	if(checkIfOn(dimensionReduction)){
+
+		objectiveFunction.ifDimensionReduction = true;
+
+		ifObjectiveDimReduction = true;
 
 	}
 
@@ -1155,7 +1180,9 @@ Optimizer RoDeODriver::setOptimizationStudy(void) {
 	std::string type = configKeys.getConfigKeyStringValue("PROBLEM_TYPE");
 	int dim = configKeys.getConfigKeyIntValue("DIMENSION");
 
-	Optimizer optimizationStudy(name, dim, type);
+	Optimizer optimizationStudy(name, dim, type,numberOfNormalDimConstraints,ifObjectiveDimReduction);
+
+	// Optimizer optimizationStudy(name, dim, type);
 
 	vec lb = configKeys.getConfigKeyVectorDoubleValue("LOWER_BOUNDS");
 	vec ub = configKeys.getConfigKeyVectorDoubleValue("UPPER_BOUNDS");
@@ -1173,7 +1200,7 @@ Optimizer RoDeODriver::setOptimizationStudy(void) {
 
 	optimizationStudy.setFileNameDesignVector(dvFilename);
 
-	ObjectiveFunction objFunc = setObjectiveFunction();     //  Definition of objective function
+	ObjectiveFunction objFunc = setObjectiveFunction();             //  Definition of objective function
 
 	optimizationStudy.addObjectFunction(objFunc);
 

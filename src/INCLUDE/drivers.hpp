@@ -60,8 +60,11 @@ private:
 	std::vector<ConstraintDefinition> constraints;
 
 	int numberOfConstraints = 0;
+
 	int numberOfVectorConstraints = 0;              // for vector constraint
-	int numberOfNormalConstraints = 0;              // for function constraint
+	int numberOfNormalConstraints = 0;              // for non-vector constraint
+	int numberOfDimReductionConstraints = 0;        // for dimension reduction
+	int numberOfNormalDimConstraints = 0;           // without dimension reduction
 
 	int numberOfGradConstraints = 0;                // constraint function with gradient information
 	int numberOfNonGradConstraints = 0;             // constraint function without gradient information
@@ -70,10 +73,11 @@ private:
 
 	bool checkifProblemTypeIsValid(std::string) const;
 	void checkIfProblemTypeIsSetProperly(void) const;
-
 	bool isProblemTypeOptimization(std::string) const;
 	bool isProblemTypeMinimization(std::string) const;
 	bool isProblemTypeMaximization(std::string) const;
+
+	bool ifObjectiveDimReduction = false;
 
 	SURROGATE_MODEL getSurrogateModelID(string) const;
 

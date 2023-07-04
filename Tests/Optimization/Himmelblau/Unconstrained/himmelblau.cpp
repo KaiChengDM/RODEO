@@ -1,6 +1,8 @@
 #include<stdio.h>
 #include<math.h>
-#include <fstream>;
+#include <unistd.h>
+#include <fstream>
+
 using namespace std;
 
 
