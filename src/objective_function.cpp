@@ -561,9 +561,16 @@ std::string ObjectiveFunction::getExecutionCommand(void) const{
 
 	std::string runCommand;
 
-    if (executableName == "FdmSolver"){
+    if (executableName == "FdmSolver"){     // For FdmSolver only
 
-    	runCommand = executablePath +"/" + executableName + " -f " + jsonFile;   // For induheat
+    	if(isNotEmpty(executablePath)) {
+
+    		runCommand = executablePath +"/" + executableName + " -f " + jsonFile;
+
+    	}else{
+
+    		runCommand = "./" + executableName + " -f " + jsonFile;
+    	}
 
     }
 

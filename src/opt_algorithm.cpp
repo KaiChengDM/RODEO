@@ -83,12 +83,12 @@ void Hooke_Jeeves::boxmin(mat dv, vec dv_l, vec dv_u){
 
 	  start(dv.col(kk),dv_lb,dv_ub,kk);
 
-	  int kmax;
+	  int kmax = 10;
 
-	  if (dim < 2)
-	      { kmax = 2;}
-      else
-	      { kmax = std::min(dim,4);}
+//	  if (dim < 2)
+//	      { kmax = 2;}
+//      else
+//	      { kmax = std::min(dim,4);}
 
 	  for (unsigned int k = 0; k < kmax; k++){  // Iterate for kmax times
 

@@ -38,6 +38,7 @@
 #include <omp.h>
 #include <cassert>
 #include <filesystem>
+#include <sys/stat.h>
 #include "auxiliary_functions.hpp"
 #include "kriging_training.hpp"
 #include "aggregation_model.hpp"
@@ -52,6 +53,7 @@
 
 using namespace arma;
 
+// namespace fs = std::filesystem;
 
 // Optimizer::Optimizer(){};
 
@@ -92,6 +94,35 @@ Optimizer::Optimizer(std::string nameTestcase, int numberOfOptimizationParams, s
 	setProblemType(problemType);
 
 }
+
+Optimizer::Optimizer(std::string nameTestcase, int numberOfOptimizationParams, std::string problemType){
+
+        /* RoDeO does not allow problems with too many optimization parameters */
+
+        if(numberOfOptimizationParams > 100){
+
+                std::cout<<"ERROR: Problem dimension of the optimization is too large!"<<std::endl;
+                abort();
+
+        }
+
+        name = nameTestcase;
+        dimension = numberOfOptimizationParams;
+        sampleDim = dimension;
+
+        lowerBounds.zeros(dimension);
+        upperBounds.zeros(dimension);
+
+        lowerBoundsForEIMaximization.zeros(dimension);
+        upperBoundsForEIMaximization.zeros(dimension);
+        upperBoundsForEIMaximization.fill(1.0/dimension);
+
+        iterMaxEILoop = dimension*10000;
+
+        setProblemType(problemType);
+
+}
+
 
 bool Optimizer::checkSettings(void) const{
 
@@ -670,14 +701,11 @@ void Optimizer::computeConstraintsandPenaltyTerm(Design &d) {
 
 		if(!ifConstraintsSatisfied){
 
-
 			if(ifDisplay){
 
 				std::cout<<"The new sample does not satisfy all the constraints\n";
 
 			}
-
-
 
 			if(optimizationType == "minimize"){
 
@@ -1215,26 +1243,28 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 	clock_t start, finish;
 
-	 char* buffer;
+//	char* buffer;
+//
+//	if ((buffer = getcwd(NULL,0)) == NULL){
+//
+//		   cout << "ERROR: cannot read current working dictionary\n" << endl;
+//		   abort();
+//
+//	  } else {
+//
+//	        workpath = buffer;
+//	 }
 
-	 /*
-	  if ((buffer = getcwd(NULL,0)) == NULL){
-
-		   cout << "ERROR: cannot read current working dictionary\n" << endl;
-		   abort();
-
-	  } else {
-
-	        workpath = buffer;
+	 string folderpath = "Optimal_results";    // To store the current optimal results (for induheat project)
+	 struct stat info;
+	 if (stat(folderpath.c_str(), &info) != 0) {
+		    string command = "mkdir " + folderpath;
+		 	int result = system(command.c_str());
+		 	if (!result == 0) {
+		 		 cout << "ERROR: Cannot generate the Optimal_results folder " << endl;
+		 		 abort();
+		 	 }
 	  }
-	  */
-
-	string command0 = "rm -r Optimal_results";
-	system(command0.c_str());
-
-    string folderpath = "Optimal_results";
-	string command = "mkdir " + folderpath;
-	system(command.c_str());
 
 
 	while(1){
@@ -1298,14 +1328,14 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		if (optimizedDesign.valueExpectedImprovement < 10e-5){
 
-				cout << "Current improvement is marginal, do you want to continue ?" << endl;
+				cout << "Current improvement is marginal, do you want to continue ? " << endl;
 
 		 }
 
 		if (optimizedDesign.totalProbabilityConSatisfied < 10e-15){
 
 			//cout << "The constraint may not be well-defined. " << endl;
-			cout << "The constraint cannot be satisfied. It may not well-defined ! " << endl;
+			cout << "The constraint cannot be satisfied. It may not be well-defined ! " << endl;
 
 		}
 
@@ -1467,22 +1497,30 @@ void Optimizer::calculateImprovementValue(Design &d){
 
 		  if (objFun.getexecutableName() == "FdmSolver"){
 
-
 			 if (d.improvementValue > globalOptimalDesign.improvementValue){
 
-				 //  string command0 = "rm -r Optimal_results";
-				 //  system(command0.c_str());
-				 //  std::filesystem::copy("Results", "Optimal_results");
+				 string folderpath = "Results";    // To store the current optimal results (for induheat project)
+				 struct stat info;
 
-				 string command = "cp -R Results Optimal_results";     // store the current optimal results to Optimal_results folder
-				 system(command.c_str());
+				 if (stat(folderpath.c_str(), &info) == 0) {
+
+					 string command = "cp -R Results Optimal_results";     // store the current optimal results to Optimal_results folder
+					 int result = system(command.c_str());
+					 if (!result == 0) {
+					      cout << "ERROR: Cannot move the data from 'Results' folder to 'Optimal_results' folder " << endl;
+					      abort();
+					  }
+
+			     }else {
+			    	cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
+			    	 abort();
+			     }
+
 
 			  }
 		 }
 
-
 	}
-
 }
 
 
@@ -1568,7 +1606,6 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 		if(!objFun.checkIfGradientAvailable()) {
 
 			objFun.evaluate(currentDesign);               // objective function
-
 			objFun.readEvaluateOutput(currentDesign);
 
 			rowvec temp(dimension+1);
@@ -1598,6 +1635,42 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 
 		updateOptimizationHistory(currentDesign);
 
+		if (ifBaseLineSet && sampleID ==0  && objFun.getexecutableName()=="FdmSolver" ){
+
+	    // if (ifBaseLineSet && sampleID ==0){
+
+			string folderpath = "Baseline_results";
+			struct stat info;
+			if (stat(folderpath.c_str(), &info) != 0) {
+
+				string command = "mkdir " + folderpath;
+			    int result = system(command.c_str());
+
+				if (!result == 0) {
+				    cout << "ERROR: Cannot create the Baseline_results folder !" << endl;
+					abort();
+			   }
+			}
+
+			string folderpath1 = "Results";
+			struct stat info1;
+
+		     if (stat(folderpath1.c_str(), &info1) == 0) {
+
+		    	 string command1 = "cp -R Results Baseline_results";     // store the current baseline results to Baseline_results folder
+		    	 int result1 = system(command1.c_str());
+
+		    	 if (!result1 == 0) {
+		    		  cout << "ERROR: Cannot store the baseline results !" << endl;
+		    		  abort();
+		    	  }
+			 }else {
+
+				 cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
+                 abort();
+			 }
+
+		}
 
 		if(ifDisplay){
 
@@ -1652,9 +1725,6 @@ void Optimizer::boxmin(mat dv, vec dv_l, vec dv_u){
 	   explore(dv_cur.col(kk),obj_cur(kk),kk);
 
 	   move(dv1,dv_cur.col(kk),obj_cur(kk),kk);
-
-	   // cout << "current likelihood is " << likelihood_cur(kk) << endl;
-
 	 }
 
 	}

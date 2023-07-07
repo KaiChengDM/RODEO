@@ -128,6 +128,9 @@ public:
 
 	Optimizer(std::string ,int, std::string,int,bool);
 
+	Optimizer(std::string ,int, std::string = "minimize");
+
+
 	bool checkSettings(void) const;
 	void print(void) const;
 	void printConstraints(void) const;

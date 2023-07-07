@@ -1,6 +1,6 @@
 # current working directory
-WORKING_DIRECTORY=/home/kai/Desktop/RODEO/Tests/Optimization/Rosenbrock/WithoneconstrainedUsingGradients
+WORKING_DIRECTORY=/home/kai/Desktop/RODEO/Tests/Optimization/Himmelblau/WithoneconstrainedUsingGradients
 # directory for the python scripts
 PYTHON_DIRECTORY=/home/cheng/Desktop/RODEO/python
 # name of the configuration file
-CONFIGURATION_FILE=Rosenbrock.cfg
+CONFIGURATION_FILE=himmelblau.cfg
