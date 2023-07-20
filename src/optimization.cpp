@@ -1381,7 +1381,7 @@ void Optimizer::EfficientGlobalOptimization(void){
 		}
 
 		if (objFun.getexecutableName()=="FdmSolver" ){
-			 storeResults(numberOfInitialDoE+iterOpt);    // store the results to specific folder (for induheat project)
+			 storeResults(numberOfInitialDoE+iterOpt);        // store the results to specific folder (for induheat project)
 		}
 
 		objFun.readEvaluateOutput(currentBestDesign);
@@ -1452,6 +1452,49 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 void Optimizer::storeResults(unsigned int number) {
 
+
+	if (ifBaseLineSet && number == 1){
+
+		 string folderpath = "Baseline_results";    // To store the current baseline results (for induheat project)
+		 struct stat info;
+		 if (stat(folderpath.c_str(), &info) == 0) {
+			 string command = "rm -r " + folderpath;  // remove the previous results
+			 int result = system(command.c_str());
+		     if (!result == 0) {
+				 cout << "ERROR: Cannot remove the previous Baseline_results folder " << endl;
+				  abort();
+			  }
+		 }
+
+		 string command = "mkdir " + folderpath;         // construct Baseline folder
+		 int result1 = system(command.c_str());
+		 if (!result1 == 0) {
+				 cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
+				 abort();
+		 }
+
+		 string folderpath1 = "Results";
+		 struct stat info1;
+
+		 if (stat(folderpath1.c_str(), &info1) == 0) {
+
+			 string command1 = "cp -R Results Baseline_results";     // store the current baseline results to Baseline_results folder
+			 int result2 = system(command1.c_str());
+
+			      if (!result2 == 0) {
+				     cout << "ERROR: Cannot store the baseline results !" << endl;
+				     abort();
+			      }
+
+			 }else {
+
+				   cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
+		           abort();
+			}
+
+	}
+	else {
+
 	   string folderpath = "Results" + std::to_string(number);    // To store the current i-th results (for induheat project)
 	   struct stat info;
 	   if (stat(folderpath.c_str(), &info) == 0) {
@@ -1460,14 +1503,14 @@ void Optimizer::storeResults(unsigned int number) {
 			 if (!result == 0) {
 				   	 cout << "ERROR: Cannot remove the previous results of "<< number << "-th sample !"<< endl;
 				   	 abort();
-				  }
+			 }
 	    }
 
 		string command = "mkdir " + folderpath;         // construct folder
 		int result1 = system(command.c_str());
 		if (!result1 == 0) {
-				   			  cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
-				   			  abort();
+				    cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
+				    abort();
 		 }
 
 		 string folderpath1 = "Results";
@@ -1487,7 +1530,7 @@ void Optimizer::storeResults(unsigned int number) {
 			        cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
 				    abort();
 		}
-
+	}
 }
 
 void Optimizer::cleanDoEFiles(void) const{
@@ -1692,89 +1735,8 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 
 		updateOptimizationHistory(currentDesign);
 
-		if (ifBaseLineSet && objFun.getexecutableName()=="FdmSolver" ){
-
-	    // if (ifBaseLineSet && sampleID ==0){
-
-		  if (sampleID ==0){
-
-			  string folderpath = "Baseline_results";    // To store the current baseline results (for induheat project)
-			  struct stat info;
-			  if (stat(folderpath.c_str(), &info) == 0) {
-			 		 string command = "rm -r " + folderpath;  // remove the previous results
-			 		 int result = system(command.c_str());
-			 		 if (!result == 0) {
-			 			 	cout << "ERROR: Cannot remove the previous Baseline_results folder " << endl;
-			 			    abort();
-			 		  }
-			   }
-
-			   string command = "mkdir " + folderpath;         // construct Baseline folder
-			   int result1 = system(command.c_str());
-			   if (!result1 == 0) {
-			 	 	  cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
-			 	      abort();
-			 	}
-
-			   string folderpath1 = "Results";
-			   struct stat info1;
-
-		       if (stat(folderpath1.c_str(), &info1) == 0) {
-
-		    	  string command1 = "cp -R Results Baseline_results";     // store the current baseline results to Baseline_results folder
-		    	  int result2 = system(command1.c_str());
-
-		    	  if (!result2 == 0) {
-		    		  cout << "ERROR: Cannot store the baseline results !" << endl;
-		    		  abort();
-		    	  }
-			 }else {
-
-				 cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
-                 abort();
-			 }
-
-		   }else{
-
-			    string folderpath = "Results" + std::to_string(sampleID+1);    // To store the current i-th results (for induheat project)
-			   	struct stat info;
-			   	if (stat(folderpath.c_str(), &info) == 0) {
-			   		 string command = "rm -r " + folderpath;
-			   		 int result = system(command.c_str());
-			   		 if (!result == 0) {
-			   			 cout << "ERROR: Cannot remove the previous results of "<< sampleID+1 << "-th sample !"<< endl;
-			   			  abort();
-			   		}
-			   	 }
-
-			   	 string command = "mkdir " + folderpath;         // construct Baseline folder
-			   	 int result1 = system(command.c_str());
-			   	 if (!result1 == 0) {
-			   			  cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
-			   			  abort();
-			     }
-
-			   	  string folderpath1 = "Results";
-			   	  struct stat info1;
-
-			   	  if (stat(folderpath1.c_str(), &info1) == 0) {
-
-			   		    string command1 = "cp -R Results " + folderpath;     // store the current baseline results to Baseline_results folder
-			   		    int result2 = system(command1.c_str());
-
-			   		     if (!result2 == 0) {
-			   		    		  cout << "ERROR: Cannot store the results at step "<< sampleID+1 << endl;
-			   		    		  abort();
-			   		     }
-
-			   			 }else {
-
-			   				 cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
-			                    abort();
-			   		}
-
-		   }
-
+		if (objFun.getexecutableName()=="FdmSolver" ){
+			     storeResults(sampleID+1);
 		}
 
 		if(ifDisplay){
