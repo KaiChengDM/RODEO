@@ -1255,17 +1255,27 @@ void Optimizer::EfficientGlobalOptimization(void){
 //	        workpath = buffer;
 //	 }
 
-	 string folderpath = "Optimal_results";    // To store the current optimal results (for induheat project)
-	 struct stat info;
-	 if (stat(folderpath.c_str(), &info) != 0) {
-		    string command = "mkdir " + folderpath;
-		 	int result = system(command.c_str());
-		 	if (!result == 0) {
-		 		 cout << "ERROR: Cannot generate the Optimal_results folder " << endl;
-		 		 abort();
-		 	 }
+	if (objFun.getexecutableName()=="FdmSolver" ){
+
+	   string folderpath = "Optimal_results";       // To store the current optimal results (for induheat project)
+	   struct stat info;
+	   if (stat(folderpath.c_str(), &info) == 0) {
+		   string command = "rm -r " + folderpath;  // remove the previous results
+		   int result = system(command.c_str());
+		   if (!result == 0) {
+			 	cout << "ERROR: Cannot remove the previous Optimal_results folder " << endl;
+			    abort();
+		  }
 	  }
 
+	   string command = "mkdir " + folderpath;
+	   int result1 = system(command.c_str());
+	   if (!result1 == 0) {
+	 	  cout << "ERROR: Cannot construct the Optimal_results folder " << endl;
+	      abort();
+	   }
+
+     }
 
 	while(1){
 
@@ -1334,7 +1344,6 @@ void Optimizer::EfficientGlobalOptimization(void){
 
 		if (optimizedDesign.totalProbabilityConSatisfied < 10e-15){
 
-			//cout << "The constraint may not be well-defined. " << endl;
 			cout << "The constraint cannot be satisfied. It may not be well-defined ! " << endl;
 
 		}
@@ -1369,6 +1378,10 @@ void Optimizer::EfficientGlobalOptimization(void){
 		else{
 
 			objFun.evaluateAdjoint(currentBestDesign);
+		}
+
+		if (objFun.getexecutableName()=="FdmSolver" ){
+			 storeResults(numberOfInitialDoE+iterOpt);    // store the results to specific folder (for induheat project)
 		}
 
 		objFun.readEvaluateOutput(currentBestDesign);
@@ -1434,6 +1447,47 @@ void Optimizer::EfficientGlobalOptimization(void){
 		}
 
 	} /* end of the optimization loop */
+}
+
+
+void Optimizer::storeResults(unsigned int number) {
+
+	   string folderpath = "Results" + std::to_string(number);    // To store the current i-th results (for induheat project)
+	   struct stat info;
+	   if (stat(folderpath.c_str(), &info) == 0) {
+			 string command = "rm -r " + folderpath;
+			 int result = system(command.c_str());
+			 if (!result == 0) {
+				   	 cout << "ERROR: Cannot remove the previous results of "<< number << "-th sample !"<< endl;
+				   	 abort();
+				  }
+	    }
+
+		string command = "mkdir " + folderpath;         // construct folder
+		int result1 = system(command.c_str());
+		if (!result1 == 0) {
+				   			  cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
+				   			  abort();
+		 }
+
+		 string folderpath1 = "Results";
+		 struct stat info1;
+
+		  if (stat(folderpath1.c_str(), &info1) == 0) {
+
+			  string command1 = "cp -R Results " + folderpath;     // store the current results to i-th folder
+			  int result2 = system(command1.c_str());
+
+			 if (!result2 == 0) {
+				   	cout << "ERROR: Cannot store the results at step "<< number << endl;
+				     abort();
+			  }
+		  }else {
+
+			        cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
+				    abort();
+		}
+
 }
 
 void Optimizer::cleanDoEFiles(void) const{
@@ -1527,6 +1581,9 @@ void Optimizer::calculateImprovementValue(Design &d){
 
 void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 
+
+	numberOfInitialDoE = howManySamples;
+
 	if(ifDisplay){
 
 		std::cout<<"performing DoE...\n";
@@ -1558,7 +1615,7 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 
 		if (ifBaseLineSet){
 
-			DoE.setBaseline(baseline);                              // set the design parameter baseline as the first sample
+			DoE.setBaseline(baseline);                                // set the design parameter baseline as the first sample
 
 		}
 
@@ -1635,32 +1692,39 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 
 		updateOptimizationHistory(currentDesign);
 
-		if (ifBaseLineSet && sampleID ==0  && objFun.getexecutableName()=="FdmSolver" ){
+		if (ifBaseLineSet && objFun.getexecutableName()=="FdmSolver" ){
 
 	    // if (ifBaseLineSet && sampleID ==0){
 
-			string folderpath = "Baseline_results";
-			struct stat info;
-			if (stat(folderpath.c_str(), &info) != 0) {
+		  if (sampleID ==0){
 
-				string command = "mkdir " + folderpath;
-			    int result = system(command.c_str());
-
-				if (!result == 0) {
-				    cout << "ERROR: Cannot create the Baseline_results folder !" << endl;
-					abort();
+			  string folderpath = "Baseline_results";    // To store the current baseline results (for induheat project)
+			  struct stat info;
+			  if (stat(folderpath.c_str(), &info) == 0) {
+			 		 string command = "rm -r " + folderpath;  // remove the previous results
+			 		 int result = system(command.c_str());
+			 		 if (!result == 0) {
+			 			 	cout << "ERROR: Cannot remove the previous Baseline_results folder " << endl;
+			 			    abort();
+			 		  }
 			   }
-			}
 
-			string folderpath1 = "Results";
-			struct stat info1;
+			   string command = "mkdir " + folderpath;         // construct Baseline folder
+			   int result1 = system(command.c_str());
+			   if (!result1 == 0) {
+			 	 	  cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
+			 	      abort();
+			 	}
 
-		     if (stat(folderpath1.c_str(), &info1) == 0) {
+			   string folderpath1 = "Results";
+			   struct stat info1;
 
-		    	 string command1 = "cp -R Results Baseline_results";     // store the current baseline results to Baseline_results folder
-		    	 int result1 = system(command1.c_str());
+		       if (stat(folderpath1.c_str(), &info1) == 0) {
 
-		    	 if (!result1 == 0) {
+		    	  string command1 = "cp -R Results Baseline_results";     // store the current baseline results to Baseline_results folder
+		    	  int result2 = system(command1.c_str());
+
+		    	  if (!result2 == 0) {
 		    		  cout << "ERROR: Cannot store the baseline results !" << endl;
 		    		  abort();
 		    	  }
@@ -1669,6 +1733,47 @@ void Optimizer::performDoE(unsigned int howManySamples, DoE_METHOD methodID){
 				 cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
                  abort();
 			 }
+
+		   }else{
+
+			    string folderpath = "Results" + std::to_string(sampleID+1);    // To store the current i-th results (for induheat project)
+			   	struct stat info;
+			   	if (stat(folderpath.c_str(), &info) == 0) {
+			   		 string command = "rm -r " + folderpath;
+			   		 int result = system(command.c_str());
+			   		 if (!result == 0) {
+			   			 cout << "ERROR: Cannot remove the previous results of "<< sampleID+1 << "-th sample !"<< endl;
+			   			  abort();
+			   		}
+			   	 }
+
+			   	 string command = "mkdir " + folderpath;         // construct Baseline folder
+			   	 int result1 = system(command.c_str());
+			   	 if (!result1 == 0) {
+			   			  cout << "ERROR: Cannot construct the Baseline_results folder " << endl;
+			   			  abort();
+			     }
+
+			   	  string folderpath1 = "Results";
+			   	  struct stat info1;
+
+			   	  if (stat(folderpath1.c_str(), &info1) == 0) {
+
+			   		    string command1 = "cp -R Results " + folderpath;     // store the current baseline results to Baseline_results folder
+			   		    int result2 = system(command1.c_str());
+
+			   		     if (!result2 == 0) {
+			   		    		  cout << "ERROR: Cannot store the results at step "<< sampleID+1 << endl;
+			   		    		  abort();
+			   		     }
+
+			   			 }else {
+
+			   				 cout << "ERROR: Cannot find the 'Results' folder, please store the data to this folder !" << endl;
+			                    abort();
+			   		}
+
+		   }
 
 		}
 

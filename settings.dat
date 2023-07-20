@@ -1,5 +1,5 @@
 # current working directory
-WORKING_DIRECTORY=/home/kai/Desktop/RODEO/Tests/Optimization/Himmelblau/WithoneconstrainedUsingGradients
+WORKING_DIRECTORY=/home/cheng/Desktop/RODEO/Tests/Optimization/Himmelblau/WithOneConstraint_FdmSolvertest
 # directory for the python scripts
 PYTHON_DIRECTORY=/home/cheng/Desktop/RODEO/python
 # name of the configuration file

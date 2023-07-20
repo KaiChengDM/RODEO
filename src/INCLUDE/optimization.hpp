@@ -112,6 +112,8 @@ public:
 	unsigned int numberOfConstraints = 0;
 	unsigned int maxNumberOfSamples = 0;
 	unsigned int howOftenTrainModels = 10; /* train surrogates in every 10 iteration */
+	unsigned int numberOfInitialDoE = 0;
+
 
 	std::string modelType;
 
@@ -144,6 +146,9 @@ public:
 	void cleanDoEFiles(void) const;
 	void setProblemType(std::string);
 	void setMaximumNumberOfIterations(unsigned int );
+
+	void storeResults(unsigned int );
+
 	void setMaximumNumberOfIterationsForEIMaximization(unsigned int);
 
 	void setBoxConstraints(std::string filename="BoxConstraints.csv");
