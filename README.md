@@ -8,12 +8,3 @@ Features of the RoDeO Package:
 - Easy and efficient treatment of inequality constraints
 - Surrogate models can be trained also using sensitivity data
  
-# RoDeO
-# RoDeO
-# RoDeO
-# RoDeO
-# RoDeO
-# RoDeO
-# RoDeO
-# RODEO
-# RODEO
